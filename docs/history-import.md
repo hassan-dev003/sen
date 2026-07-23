@@ -71,8 +71,8 @@ complete** — the clipped row extracts fine. Never infer row boundaries from vi
 ## Description parsing
 
 The rail is a prefix here, where the statement puts the transaction type on the first block line and
-the rail on the last. Both must normalise to the same merchant string or month-end reconciliation
-fails on every row. Verified convergence on five of six sampled merchants using one shared
+the rail on the last. Both must normalise to the same merchant string, or any cross-source
+matching fails on every row. Verified convergence on five of six sampled merchants using one shared
 normaliser; see `normalisation.md`.
 
 Observed rail prefixes, some with a trailing `*` or `-` attached:
@@ -87,8 +87,8 @@ names are still truncated to 20 characters. Note merchants containing a hyphen
 (`LCSB - Genting Semp*`) and merchants that are a bare phone number or a reference.
 
 **The web view is richer than the statement.** A subscription that the statement records only as a
-phone number appears here with an actual merchant name. Reconciliation must therefore match on date,
-amount, and direction first, with merchant as a tiebreaker only — see D25.
+phone number appears here with an actual merchant name. Any matching across sources therefore keys
+on date, amount, and direction first, with merchant as a tiebreaker only — see D18.
 
 ## No running balance
 
@@ -124,8 +124,9 @@ batches, exactly as it does across statement months. See
 
 ## Status of imported rows
 
-Rows from this source are **provisional**. They are drafts like any other, but the statement is
-authoritative and supersedes them at month end. Reconciliation resolves the two.
+Rows land as drafts like any other source and are confirmed in the review queue. There is no later
+authority that supersedes them — this **is** the authoritative path. Completeness is established by
+the balance anchor, and a shortfall is repaired by widening the capture window and re-importing.
 
 ## Testing
 
