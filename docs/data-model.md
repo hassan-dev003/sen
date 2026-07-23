@@ -261,7 +261,7 @@ create table recurring_series (
   label               text not null,
   match_value         text not null,
   cadence_days        int not null,
-  typical_amount_cents bigint not null,   -- typical, not a matching condition — see D22
+  typical_amount_cents bigint not null,   -- typical, not a matching condition — see D16
   category_id         uuid references categories(id) on delete set null,
   last_seen_at        date,
   next_expected_at    date,
