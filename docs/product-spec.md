@@ -23,6 +23,15 @@ you what happened and what you have left.
 
 ## Core flows
 
+### Capture
+
+Transactions come from the M2U transaction history: print the view to PDF from the browser and drop
+it in. Roughly ten rows per print, so two or three prints a week. The view offers 30, 60, and 90 day
+windows, which makes it both the routine capture path and the repair path. Rows land as drafts in
+the review queue like any other source.
+
+Anything the bank cannot see — cash, mainly — is still typed in by hand.
+
 ### Import
 
 The owner downloads a monthly statement PDF from Maybank2u and drops it into Sen. Sen parses it,
@@ -35,18 +44,15 @@ whether the import was clean. An import with a balance discontinuity is flagged 
 rolled back as a unit. A gap against the previous month's closing balance is a warning, not a
 failure — importing out of order is legitimate.
 
-### Reconcile
+### Verify
 
-Statements arrive a month late — Maybank does not publish the current month — so import is not a
-live feed. Its job is to be the authority at month end.
+There is no month-end ritual. Every print carries the account's current balance, so each import
+checks itself: everything Sen holds for that account should add up to the balance on the newest
+capture. Verified, or off by an amount.
 
-After importing, Sen compares what the bank recorded against what was captured during the month and
-shows three lists: matched, in-bank-but-not-in-Sen (forgotten — one tap to add), and
-in-Sen-but-not-in-bank (double-logged or mistyped — one tap to fix).
-
-This is what makes intra-month capture safe. The failure mode of every manual budget app is not the
-typing, it is never knowing what you missed, so you stop trusting the total. Monthly reconciliation
-removes that doubt, and keeps doing so even after an API feed exists.
+When it is off, the repair is the same tool — switch the history view to 60 or 90 days, print, and
+re-import. Dedupe absorbs the overlap and the missing rows fill in. A missed fortnight is a minor
+inconvenience rather than a permanent hole.
 
 ### Review
 
@@ -127,4 +133,4 @@ These need the owner's answer before the sprint that depends on them.
 | Should confirmed transactions be editable after the fact, or locked? | S4 | Open |
 | Are Maybank e-statement PDFs password protected? | S2 | **Answered — no.** Three statements extracted cleanly as text. |
 | Does the description column wrap onto a second line? | S2 | **Answered — no.** Blocks are 1–4 discrete lines; the merchant is truncated at 20 characters rather than wrapped. |
-| How is spending captured during the month? | S4 | **Answered — manual entry** (D23), with statement import confirming it at the start of the following month and Finverse replacing it when available. |
+| How is spending captured? | S4 | **Answered — M2U history print-to-PDF** (D24) for bank transactions, manual entry for cash. Statement import deferred (D26). |
