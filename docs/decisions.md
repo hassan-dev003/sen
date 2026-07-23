@@ -32,7 +32,7 @@ charts that disagree with the ledger. One representation, one enum.
 **Decided.** Two identical purchases at the same merchant on the same day are indistinguishable by
 date, amount, and description. Without the balance in the hash, the second is silently dropped as a
 duplicate. Their closing balances differ, so including it keeps them distinct. This also gives the
-continuity check for free. See `docs/statement-import.md#dedupe`.
+continuity check for free. Deferred with D26; see `docs/statement-import.md`.
 
 ---
 
@@ -121,7 +121,7 @@ amounts, dates, balances, or counterparty names.
 ---
 
 ### D17 — Statement PDFs are a reconciliation source, not a live feed
-**Decided.** Maybank publishes a statement for month M only after month M ends, so import can never
+**Superseded by D26.** Maybank publishes a statement for month M only after month M ends, so import can never
 keep the ledger current. Its role is authoritative month-end verification: prove that what was
 captured during the month matches what the bank recorded, and catch anything missed. Day-to-day
 capture is a separate, faster path. Supersedes the framing in D1, which treated statement import as
@@ -159,6 +159,7 @@ adjacent month is imported.
 ---
 
 ### D21 — Consecutive statements chain, and that is a third integrity check
+**Deferred with D26.** Valid, unimplemented.
 **Decided.** Each month's beginning balance equals the previous month's ending balance, verified
 across three consecutive statements. This catches an entirely missing month, which neither the
 row-continuity check nor the statement-totals check can detect. It runs only when an adjacent month
@@ -176,6 +177,7 @@ approximate cadence, with amount treated as a typical value rather than a matchi
 ---
 
 ### D23 — Manual entry is the intra-month capture path
+**Superseded by D24 for bank transactions.** Still stands for cash and anything the bank cannot see.
 **Decided.** Spending is entered by hand during the month. At the start of the following month the
 statement is imported and reconciled against those entries, per D17. Finverse replaces manual entry
 for bank transactions when live access is granted; anything the bank cannot see stays manual
@@ -189,6 +191,59 @@ gating factor.
 
 Consequence for the build: the manual entry form is a primary screen, not a secondary one. Speed of
 entry at ~70–90 events a month is a hard requirement on it.
+
+---
+
+### D24 — M2U transaction history, printed to PDF, is the intra-month capture path
+**Decided.** Supersedes D23 for bank transactions. Verified end to end: three real captures parsed,
+deduped across prints, and collapsed correctly, with a consistent balance anchor.
+
+The file must come from the browser's own "Save as PDF" print destination. Windows' "Microsoft Print
+to PDF" driver rasterises the page — visually identical output, zero extractable text, confirmed
+across three tools. Ingest asserts a non-empty text layer and rejects with that specific cause.
+
+Chosen over the alternatives considered: OCR text capture works but has no arithmetic check behind
+it, so a plausible misread would survive review and only surface at month end. A DOM-reading
+bookmarklet was rejected as unreliable — Content Security Policy blocking is browser-dependent and a
+banking portal is the likeliest place to hit it — and it sits in a terms-of-service grey area that
+printing does not.
+
+Costs roughly ten rows per print, so two or three prints a week. Rows are provisional; the statement
+supersedes them at month end.
+
+---
+
+### D25 — Reconciliation matches on date, amount, and direction, not merchant
+**Decided.** The web history carries merchant names the statement does not — a subscription the
+statement records only as a phone number appears named in the history view. Merchant-first matching
+would fail on exactly those rows. Merchant is a tiebreaker.
+
+A near miss on the same date and merchant with a small amount difference is offered as a correction
+to the existing entry rather than treated as two transactions. Without this, one mistyped manual
+entry becomes two permanent phantom rows.
+
+---
+
+### D26 — Statement import is deferred; the 90-day history window replaces it
+**Decided.** Supersedes D17. The M2U history view offers 30, 60, and 90 day ranges, which means the
+same tool does routine weekly capture *and* repair after a missed window. That was the last job the
+statement was doing.
+
+The balance anchor on every print already answers "is anything missing." The 90-day window answers
+"then get it." A monthly reconciliation pass against a separate, harder-to-parse source adds nothing
+on top of those two.
+
+`statement-import.md` is retained in full rather than deleted. It cost several rounds of real-data
+analysis, and the conditions that would revive it are concrete: balance drift a 90-day re-import
+cannot resolve, or wanting history older than 90 days.
+
+**Structural consequence.** The two pieces that were discovered from statement data but belong to
+every source moved out into `event-collapse.md` and `normalisation.md`, and stay in the build.
+Deferring a source spec must never take core pipeline logic with it.
+
+Also retired by this: the three-list month-end reconciliation screen. It is replaced by a running
+balance figure and a "widen the window and re-import" action, which is less to build and less to
+learn.
 
 ---
 
