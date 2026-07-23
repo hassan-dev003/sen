@@ -18,6 +18,10 @@
                Deduper
     content hash + running-balance check
                    |
+           Event collapser
+   auth + reversal + settlement -> one event
+       (order-independent, orphan-tolerant)
+                   |
             Rules engine  ---->  draft category, merchant, tags
                    |
              Draft queue  <----  manual entry (cash)
@@ -48,7 +52,8 @@ lib/
     statement-pdf/        parser + Maybank layout profile (pure)
     finverse/             stub until Sprint 8
   normalize/              description cleanup, direction inference
-  dedupe/                 hashing, balance continuity assertion
+  dedupe/                 hashing, balance continuity + chaining assertions
+  events/                 auth/reversal/settlement collapse. Pure.
   rules/                  matching, learning, application
   money/                  cents arithmetic and formatting. The only place.
   db/                     queries. Nothing else touches Supabase.
@@ -118,6 +123,10 @@ An import batch is atomic. Parse and validate fully in memory, then write `impor
 `raw_rows`, and `transactions` in a single database transaction. A batch that fails its
 balance-continuity check is written with `status = 'failed'` and no transaction rows.
 
+Event collapse spans statements — a reversal in May can pair with an authorisation from April — so
+importing a batch may update `event_group_id` on rows from an *earlier* batch. This is expected.
+Rollback must therefore also unwind those regroupings, not only delete the batch's own rows.
+
 Every draft row carries `batch_id`, so an import can be rolled back wholesale — deleting drafts
 from that batch. Rollback refuses if any row in the batch has been confirmed, because at that point
 the owner has made a judgement and losing it silently would be worse than a messy ledger.
@@ -139,6 +148,7 @@ This is a single-user app with a few thousand rows a year. Do not optimise for s
 
 - `transactions (user_id, review_state)` — the draft queue reads this constantly
 - `transactions (user_id, booked_at desc)` — the ledger and every chart
+- `transactions (user_id, event_group_id)` — every spending figure groups by this
 - `transactions (user_id, dedupe_hash)` unique — correctness, not speed
 
 Anything beyond that is premature.
