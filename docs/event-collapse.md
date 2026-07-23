@@ -74,7 +74,8 @@ for an auth will leave both rows unmatched.
 
 **Cross-month orphans.** A reversal can appear in one statement with its authorisation in the
 previous one. Observed on 01/05, where a refund has no corresponding authorisation anywhere in the
-May statement. The converse also occurs at month end. Unmatched rows at statement boundaries are
+adjacent capture. The converse also occurs at the newest edge of a capture. Unmatched rows at
+capture boundaries are
 **expected, not an error** — leave them unmatched and re-run matching when the adjacent month is
 imported.
 
