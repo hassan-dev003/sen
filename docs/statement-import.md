@@ -2,7 +2,7 @@
 
 > **Not in the build.** The M2U history view reaches back 90 days, which covers both routine capture
 > and repair after a missed window, so the statement is no longer needed to keep the ledger honest
-> (D26). This spec is kept, complete and current, because the work behind it was expensive and the
+> (D19). This spec is kept, complete and current, because the work behind it was expensive and the
 > conditions that would revive it are concrete: sustained balance drift that a 90-day re-import
 > cannot resolve, or wanting history older than 90 days.
 >
@@ -146,6 +146,24 @@ TOTAL DEBIT   :   <amount>
 
 None of these are transactions. All four are used by the balance checks below.
 
+## Deferred decisions
+
+These were decided for this source and are retained with it. They are deliberately **not** in
+`decisions.md`, which carries only live decisions.
+
+**Running balance is part of the dedupe hash.** Two identical purchases at the same merchant on the
+same day are indistinguishable by date, amount, and description; without the balance in the hash the
+second is silently dropped as a duplicate. Their closing balances differ, so including it keeps them
+distinct — and gives the continuity check for free.
+
+**Balance continuity is a hard gate, not a warning.** A batch with any arithmetic break inserts zero
+transactions. The failure it prevents — a parser dropping one row per statement — is invisible for
+months and corrupts every number downstream.
+
+**Consecutive statements chain.** Each month's beginning balance equals the previous month's ending
+balance, verified across three statements. This catches an entirely missing month, which neither the
+row-continuity check nor the totals check can detect.
+
 ## Balance checks
 
 *Retained for reference; not implemented while this spec is deferred.*
@@ -189,7 +207,7 @@ break in `import_batches.balance_check` with the line number, expected value, an
 
 ## Dedupe
 
-Unchanged in principle; see `docs/decisions.md` D4. Hash inputs:
+See "Deferred decisions" above for why the running balance is in the hash. Inputs:
 
 ```
 sha256([account_id, booked_at, direction, amount_cents,
