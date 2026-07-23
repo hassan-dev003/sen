@@ -15,8 +15,9 @@ Sen splits the difference. Machines do the typing. A human does the confirming.
 
 ## How it works
 
-1. **Ingest.** Transactions arrive from a bank statement PDF (v1) or the Finverse API (later).
-   Both are normalised into one shared record shape.
+1. **Ingest.** Transactions arrive from the M2U transaction history, printed to PDF from the
+   browser. The view reaches back 90 days, so the same tool does routine capture and repairs any
+   gap. Statement and API adapters are specced and deferred.
 2. **Dedupe.** Overlapping imports are collapsed using a content hash that includes the
    statement's running balance. The same balance column is used to prove no rows were dropped.
 3. **Collapse.** Card purchases arrive as several ledger rows — an authorisation, its reversal,
@@ -24,8 +25,8 @@ Sen splits the difference. Machines do the typing. A human does the confirming.
    while every row is retained, so the ledger still matches the bank exactly.
 4. **Draft.** A rules engine assigns a category, merchant, and tags to each event. Nothing is final.
 5. **Review.** Drafts land in a queue. You confirm, edit, or ignore. Every edit can become a rule.
-6. **Reconcile.** At month end the statement is the authority: anything the bank recorded that Sen
-   missed gets added, anything Sen has that the bank doesn't gets flagged.
+6. **Verify.** Every print carries the account balance, so each import checks itself. If it's off,
+   widen the window and re-import.
 7. **Ledger.** Confirmed events drive budgets, charts, and recurring-spend detection.
 
 ## Stack
@@ -52,7 +53,10 @@ If you are a coding agent picking up this repo, read in this order:
 4. Then the spec for the area you are touching:
    - [`docs/architecture.md`](docs/architecture.md) — system shape, module boundaries
    - [`docs/data-model.md`](docs/data-model.md) — schema, RLS, money handling
-   - [`docs/statement-import.md`](docs/statement-import.md) — PDF parsing, normalisation, dedupe
+   - [`docs/history-import.md`](docs/history-import.md) — capture from M2U, the live path
+   - [`docs/event-collapse.md`](docs/event-collapse.md) — auth/reversal/settlement, all sources
+   - [`docs/normalisation.md`](docs/normalisation.md) — shared merchant normalisation
+   - [`docs/statement-import.md`](docs/statement-import.md) — deferred, retained
    - [`docs/categorization.md`](docs/categorization.md) — rules engine and the learning loop
    - [`docs/decisions.md`](docs/decisions.md) — decision log, including reversible assumptions
 
