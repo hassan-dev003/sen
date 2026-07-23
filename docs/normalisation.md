@@ -7,7 +7,7 @@ The load-bearing requirement: the same transaction seen through different source
 **same** normalised merchant. The M2U history puts the payment rail as a prefix; the statement puts
 the transaction type first and the rail last. Verified convergence on five of six sampled merchants.
 Where it fails — a subscription the statement records only as a phone number but the history names —
-matching falls back to date, amount, and direction (D25).
+matching falls back to date, amount, and direction (D18).
 
 ## Normalisation
 
