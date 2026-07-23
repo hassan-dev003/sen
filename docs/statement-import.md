@@ -1,4 +1,13 @@
-# Statement import
+# Statement import — DEFERRED
+
+> **Not in the build.** The M2U history view reaches back 90 days, which covers both routine capture
+> and repair after a missed window, so the statement is no longer needed to keep the ledger honest
+> (D26). This spec is kept, complete and current, because the work behind it was expensive and the
+> conditions that would revive it are concrete: sustained balance drift that a 90-day re-import
+> cannot resolve, or wanting history older than 90 days.
+>
+> The two genuinely shared pieces that used to live here — `event-collapse.md` and
+> `normalisation.md` — have moved out and remain fully in the build.
 
 Specification derived from three consecutive real Maybank Islamic savings account e-statements
 (April, May, June 2026 — 9, 13, and 10 pages respectively). Everything in the "Actual format"
@@ -137,116 +146,9 @@ TOTAL DEBIT   :   <amount>
 
 None of these are transactions. All four are used by the balance checks below.
 
-## The pre-authorisation triplet
-
-The single most important behaviour in the file, and the one that determines whether the review
-queue is usable.
-
-A card purchase frequently appears as **three separate rows**:
-
-```
-01/06/26  PRE-AUTH MYDEBIT       12.50-   939.15    PETRON SIMPANG AMPA*
-01/06/26  REV PREAUTH MYDEBIT    12.50+   951.65    PETRON SIMPANG AMPA*
-01/06/26  PAYMENT VIA MYDEBIT    12.50-   939.15    PETRON SIMPANG AMPA*
-```
-
-Authorisation, reversal of the authorisation, then settlement. Net effect: one purchase of RM 12.50.
-All three rows are legitimate ledger entries with correct balances — they are not duplicates and
-must not be deduped away.
-
-Across all three months this pattern accounts for roughly 30% of all rows — consistently, not as a
-one-month anomaly. Petrol stations, toll
-plazas, and parking operators produce it almost every time. Presenting ~100 rows for review when there were
-~70 economic events is the difference between a queue the owner clears and one they abandon.
-
-### Statement order is not causal order
-
-**The single most important correction from the multi-month sample.** The three rows do not appear
-in auth → reversal → settlement order. Observed in April, where the reversal is listed first:
-
-```
-14/04/26  REV PREAUTH MYDEBIT    5.00+   SHELL - SUNWAY MENT*
-14/04/26  PRE-AUTH MYDEBIT       5.00-   SHELL - SUNWAY MENT*
-14/04/26  PAYMENT VIA MYDEBIT    5.00-   SHELL - SUNWAY MENT*
-```
-
-The balances are internally consistent in the order printed — the statement is ordered by posting
-sequence, which does not match the logical lifecycle. **Matching must be order-independent.** Any
-algorithm that looks for a settlement *after* a reversal will silently fail on rows like these.
-
-### Variants that must be handled
-
-**Amount changes between auth and settlement** (foreign currency):
-
-```
-PRE-AUTH DEBIT     52.68-     DIGITALOCEAN.COM
-PRE-AUTH REFUND    52.68+     DIGITALOCEAN.COM
-SALE DEBIT         52.17-     DIGITALOCEAN.COM
-```
-
-The auth and its reversal match exactly. The settlement differs. Matching must not require all
-three to be equal.
-
-**No settlement at all** (fully cancelled). Net zero — one cancelled event, or nothing. Never two
-review items.
-
-**Settlement reversal — a two-row shape, not a triplet.** A different vocabulary and a different
-lifecycle: an already-settled payment is refunded. Observed in both April and May:
-
-```
-PAYMENT VIA MYDEBIT     1.00-     APSB.MX.COVA_SQUARE*
-PYMT VIA MYDEBIT RE     1.00+     APSB.MX.COVA_SQUARE*
-```
-
-There is no authorisation row. Treating `PYMT VIA MYDEBIT RE` as a pre-auth reversal and hunting
-for an auth will leave both rows unmatched.
-
-**Cross-month orphans.** A reversal can appear in one statement with its authorisation in the
-previous one. Observed on 01/05, where a refund has no corresponding authorisation anywhere in the
-May statement. The converse also occurs at month end. Unmatched rows at statement boundaries are
-**expected, not an error** — leave them unmatched and re-run matching when the adjacent month is
-imported.
-
-### Type vocabularies
-
-Configurable table, not hardcoded strings. Observed across three months:
-
-| Role | Observed types |
-| --- | --- |
-| Authorisation | `PRE-AUTH MYDEBIT`, `PRE-AUTH DEBIT` |
-| Auth reversal | `REV PREAUTH MYDEBIT`, `PRE-AUTH REFUND` |
-| Settlement | `PAYMENT VIA MYDEBIT`, `SALE DEBIT` |
-| Settlement reversal | `PYMT VIA MYDEBIT RE` |
-
-Note that `PRE-AUTH REFUND` rows frequently carry `SALE DEBIT` as their block's trailing type line.
-Classify on the **first line's** type, never the trailing one.
-
-### Collapse algorithm
-
-Runs after parsing, before creating drafts. It groups; it never deletes. It is order-independent
-and tolerates unmatched rows.
-
-1. Group rows by normalised merchant within a rolling window of ~10 days. The window must be
-   allowed to cross a statement boundary.
-2. Classify every row by its first-line type using the table above.
-3. Pair each auth-reversal with an unpaired authorisation of the **same amount**, nearest by date,
-   **regardless of the order they appear in the statement**.
-4. Pair each settlement-reversal with an unpaired settlement of the same amount.
-5. Remaining unpaired settlements are economic events, at their own amount.
-6. An authorisation paired with a reversal and no settlement is a cancelled event, netting zero.
-7. An authorisation with no reversal is still pending — emit a provisional event and re-resolve on
-   the next import.
-8. A reversal with nothing to pair against is a cross-month orphan. Leave it, and retry when the
-   adjacent statement is imported.
-9. Emit one reviewable event per group, constituent rows attached and visible on expand.
-
-All rows are still written to `transactions`, preserving balance continuity and correspondence with
-the bank. They share an `event_group_id`. Review queue and spending charts operate on **events**;
-balance reconstruction operates on **rows**.
-
-This is the one piece of logic worth testing exhaustively before any UI exists.
-
 ## Balance checks
+
+*Retained for reference; not implemented while this spec is deferred.*
 
 Two independent assertions. Run both; they catch different failures.
 
@@ -284,61 +186,6 @@ rather than a hard failure — the owner may legitimately import out of order.
 
 A batch failing either row-level check writes `status = 'failed'` and inserts zero transactions. Record every
 break in `import_batches.balance_check` with the line number, expected value, and actual value.
-
-## Normalisation
-
-`description_normalized` is what rules and dedupe match against. Deterministic, stable, versioned —
-changing it invalidates every existing hash.
-
-Apply in order:
-
-1. Take the merchant line (block line 2) when present; fall back to the type line
-2. Strip a trailing truncation `*` at position 21
-3. Uppercase, collapse whitespace, trim
-4. Remove per-transaction reference tokens. Observed forms, all of which vary per transaction and
-   would otherwise break every rule match:
-   - `QR` followed by digits — `QR71429243`, `QR75812013`
-   - digits followed by `Q` — `126641398Q`, `370647823Q`
-   - long numeric strings — `11113411886488`, `2605251939230384`
-   - `MBBQR` followed by digits, and `MB` followed by digits and a letter
-   - `T` followed by digits — `T110296493826`
-   - `my` followed by digits — `my3260024837`
-   - a `MMYY` suffix on payroll descriptors — the salary line ends `SALARY 0426` / `0526` / `0626`,
-     so the month must be stripped or the rule matches once and never again
-5. Move the payment rail into a structured field rather than the description. Observed values:
-   `DUITNOW QR`, `MAE QR`, `MBB CT`, `QR PAY SALES`, `PAYMENT VIA MYDEBIT`, `SALE DEBIT`,
-   `PRE-AUTH MYDEBIT`, `REV PREAUTH MYDEBIT`, `PRE-AUTH DEBIT`, `PRE-AUTH REFUND`,
-   `PYMT VIA MYDEBIT RE`, `IBK FUND TFR FR A/C`, `IBK FUND TFR TO A/C`, `TRANSFER FROM A/C`,
-   `FUND TRANSFER TO A/`, `PYMT FROM A/C`, `FPX PAYMENT FR A/`, `SVG GIRO CR`, `PROFIT PAID`
-
-   Note `DUITNOW QR-` was observed once with a trailing hyphen; normalise it to `DUITNOW QR`.
-6. Keep the merchant portion otherwise intact
-
-Record a `normalizer_version` constant. If it changes, recompute hashes from `raw_rows` in a
-migration.
-
-## Observed transaction character
-
-From three consecutive months. Useful for the review queue design and the rules seed.
-
-- **~80–125 rows per month, ~70–90 economic events after collapse.** Statement length varies
-  considerably month to month.
-- **Dominated by small, high-frequency, repetitive transactions.** Tolls, LRT fares, and parking in
-  the RM 1.00–4.30 range are the bulk of the row count. A handful of merchant strings recur many
-  times each, every month.
-- **Person-to-person transfers in both directions are common and high-volume**, via MAE QR, with
-  the counterparty's name in the merchant field. These are bill splitting, not spending. Treatment
-  is an open question in `product-spec.md`.
-- **Own-account sweeps** appear with the account holder's own name as counterparty and a descriptor
-  identifying the pot — at least two families observed across the sample. Unambiguous transfers.
-- **Salary is monthly but the amount varies**, and its descriptor carries the month as a suffix.
-  Recurring detection that requires a stable amount will miss it; cadence plus a stable normalised
-  descriptor will find it. It did not appear at all in one of the three months.
-- **Some recurring subscriptions have no merchant name** — only a US phone number in the merchant
-  field. Two distinct ones observed, both monthly at a stable amount. Rules must be able to match
-  on a phone-number string.
-- `PROFIT PAID` (the Islamic-banking interest equivalent) appeared in only one of three months.
-  Do not assume it is monthly.
 
 ## Dedupe
 
