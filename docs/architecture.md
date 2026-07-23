@@ -4,7 +4,7 @@
 
 ```
   M2U history      PDF statement       Finverse API
-  (in the build)   (deferred, D26)     (deferred, gated)
+  (in the build)   (deferred, D19)     (deferred, gated)
         |                |                    |
         +----------------+--------------------+
                          |
