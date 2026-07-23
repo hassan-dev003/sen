@@ -3,12 +3,12 @@
 ## The shape
 
 ```
-  PDF statement          Finverse API
-  (Sprint 3)             (Sprint 8, gated)
-        |                      |
-        +----------+-----------+
-                   |
-             SourceAdapter
+  M2U history      PDF statement       Finverse API
+  (in the build)   (deferred, D26)     (deferred, gated)
+        |                |                    |
+        +----------------+--------------------+
+                         |
+                   SourceAdapter
        normalises to RawTransaction
                    |
               Normaliser
@@ -49,11 +49,13 @@ app/                      Next.js routes and server actions. Thin.
 lib/
   sources/
     types.ts              SourceAdapter interface, RawTransaction
-    statement-pdf/        parser + Maybank layout profile (pure)
+    m2u-history/          print-to-PDF parser (pure)
+    statement-pdf/        deferred — spec retained, not built
     finverse/             stub until Sprint 8
   normalize/              description cleanup, direction inference
-  dedupe/                 hashing, balance continuity + chaining assertions
-  events/                 auth/reversal/settlement collapse. Pure.
+  dedupe/                 hashing, day-scoped occurrence, balance verification
+  normalize/              shared across sources — see docs/normalisation.md
+  events/                 auth/reversal/settlement collapse. Pure. All sources.
   rules/                  matching, learning, application
   money/                  cents arithmetic and formatting. The only place.
   db/                     queries. Nothing else touches Supabase.
@@ -80,7 +82,7 @@ export interface RawTransaction {
 }
 
 export interface SourceAdapter {
-  readonly source: 'statement_pdf' | 'finverse' | 'manual';
+  readonly source: 'statement_pdf' | 'm2u_history' | 'finverse' | 'manual';
   ingest(input: unknown): Promise<{
     accountHint: string | null;
     periodStart: string | null;
@@ -92,10 +94,10 @@ export interface SourceAdapter {
 
 Two fields exist purely so the Finverse swap is a non-event later:
 
-- `postingState` is always `'posted'` for statement imports. Bank APIs deliver pending
+- `postingState` is always `'posted'` for statement and history imports. Bank APIs deliver pending
   transactions that later change amount and description. Having the column from day one means no
   migration and no rethink when that happens.
-- `externalId` is always `null` for statements. When it exists it is the *better* dedupe key.
+- `externalId` is always `null` for statements and history captures. When it exists it is the *better* dedupe key.
 
 ## Why the deduper knows about sources
 
@@ -103,7 +105,9 @@ The one place the source-agnostic rule bends. Statements carry a running balance
 APIs carry a stable ID and often no balance. The deduper picks its strategy accordingly:
 
 - `externalId` present → dedupe on `(user_id, source, external_id)`
-- otherwise → dedupe on the content hash, which includes `balance_after_cents`
+- otherwise → dedupe on the content hash. The statement includes `balance_after_cents`; the M2U
+  history has no running balance and substitutes a day-scoped occurrence index — see
+  `docs/history-import.md#no-running-balance`
 
 Both are database unique constraints. See `docs/statement-import.md` for the hash definition and
 why the balance is in it.
