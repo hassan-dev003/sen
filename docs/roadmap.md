@@ -47,13 +47,18 @@ A pure library. No database, no Next.js, no upload UI.
 
 - [ ] `parseStatement(pages) -> ParsedStatement` implemented per `docs/statement-import.md`
 - [ ] `pdfjs-dist` extraction with positional data, separated from parsing
-- [ ] Password-protected PDF support, if the open question resolves that way
-- [ ] All seven fixtures in `docs/statement-import.md#testing` exist and pass
+- [ ] Line-splitting when extraction concatenates a date onto the previous line
+- [ ] Merchant resolution by line role, not line position (FPX blocks put it on line 3)
+- [ ] All fixtures in `docs/statement-import.md#testing` exist and pass (twenty of them)
 - [ ] Golden-file snapshots checked in
 - [ ] Balance continuity check implemented, with the `dropped-row` fixture proving it fires
 - [ ] Normaliser implemented with a `normalizer_version` constant
+- [ ] **Event collapse implemented per `docs/statement-import.md#collapse-algorithm`** — order
+      independent, tolerant of orphans, handling both the three-row and two-row shapes. This is the
+      hardest logic in the project and the most expensive to get wrong. Test it exhaustively.
 
-**Blocked on:** the two parser open questions in `docs/product-spec.md`. Ask before starting.
+**No longer blocked.** Both parser open questions are answered: statements are not password
+protected, and descriptions do not wrap.
 
 ---
 
@@ -66,25 +71,38 @@ Wire the parser to the database. Still almost no UI — an upload form and a rep
 - [ ] `raw_rows` populated with verbatim source text for every row
 - [ ] Dedupe hash computed and enforced by unique constraint; `on conflict do nothing`
 - [ ] A batch failing the balance check inserts zero transactions and reports the breaking lines
-- [ ] Import report shows parsed / inserted / duplicate counts and the balance result
-- [ ] Rollback deletes a batch's drafts, and refuses if any row is confirmed
+- [ ] All three balance checks: row continuity, statement totals, and chaining against the
+      adjacent month (the last is a warning, not a failure)
+- [ ] Event grouping persisted, including regrouping rows from earlier batches when a later
+      import supplies the missing half of a pair
+- [ ] Import report shows rows parsed, events after collapse, inserted / duplicate counts, and all
+      three balance results
+- [ ] Rollback deletes a batch's drafts and unwinds any cross-batch regrouping it caused, and
+      refuses if any row is confirmed
 - [ ] **Re-importing the same file twice inserts zero rows.** This is the sprint's key test.
 - [ ] Overlapping periods insert only the genuinely new rows
 
 ---
 
-## Sprint 4 — Review queue
+## Sprint 4 — Review queue and capture
 
-The screen the owner will use more than any other.
+The screens the owner will use more than any other.
 
-- [ ] Draft list: date, raw description, amount, proposed category, source batch
+**Blocked on:** the intra-month capture question in `docs/product-spec.md#open-questions`. Build the
+review queue first; ask before designing the capture screen.
+
+- [ ] Draft list of **events**, not rows: date, description, amount, proposed category, source
+      batch, with constituent rows visible on expand
+- [ ] Pending and orphan events are visibly distinct from resolved ones, and are not errors
 - [ ] Keyboard-first: confirm, change category, skip, undo — all single keys, with a help overlay
 - [ ] Inline category picker with type-ahead
 - [ ] Bulk confirm for a filtered selection
 - [ ] Manual entry form (covers cash) — date, amount, category, note, in under ten seconds
 - [ ] Ignore action for rows that should never appear in the ledger
 - [ ] Usable on a phone
-- [ ] Playwright test: clear a 40-row queue using only the keyboard
+- [ ] Playwright test: clear an 80-event queue using only the keyboard
+- [ ] Month-end reconciliation view: matched, in-bank-not-in-Sen, in-Sen-not-in-bank, with one-tap
+      resolution on each
 
 ---
 
@@ -116,7 +134,9 @@ The screen the owner will use more than any other.
 
 ## Sprint 7 — Recurring and polish
 
-- [ ] Recurring detection: stable cadence and amount, written as `confirmed = false`
+- [ ] Recurring detection: stable cadence and normalised descriptor, **not** stable amount; written
+      as `confirmed = false`. Must find a monthly item that varies in amount and skips a month.
+- [ ] Rules match merchants that are absent entirely, or are a bare phone number
 - [ ] Owner promotes a series; nothing acts on an unconfirmed one
 - [ ] Committed monthly spend total on the dashboard
 - [ ] Empty states, loading states, error states across the app
@@ -139,8 +159,10 @@ limited quota on request.
 - [ ] Link flow, token storage encrypted at rest, server-side refresh
 - [ ] `external_id` dedupe path exercised
 - [ ] `pending -> posted` transitions update the existing row rather than inserting a second
-- [ ] **No changes required below `SourceAdapter`.** If this sprint touches the deduper, the rules
-      engine, or the review queue, the Sprint 3 abstraction was wrong and that is the finding.
+- [ ] **No changes required below `SourceAdapter`.** If this sprint touches the deduper, the event
+      collapser, the rules engine, or the review queue, the Sprint 3 abstraction was wrong and that
+      is the finding.
+- [ ] Statement import is retained as the month-end reconciliation authority (D17), not removed
 
 ---
 
