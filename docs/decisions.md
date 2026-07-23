@@ -175,6 +175,23 @@ approximate cadence, with amount treated as a typical value rather than a matchi
 
 ---
 
+### D23 — Manual entry is the intra-month capture path
+**Decided.** Spending is entered by hand during the month. At the start of the following month the
+statement is imported and reconciled against those entries, per D17. Finverse replaces manual entry
+for bank transactions when live access is granted; anything the bank cannot see stays manual
+permanently.
+
+No better automated option exists today. Maybank debit card transaction alerts are SMS-only and
+fire only at RM 500 and above, so they cannot see a spending profile whose median transaction is a
+few ringgit. Malaysian bank coverage among the major international aggregators is close to
+non-existent, which leaves Finverse as the realistic route and its commercial timeline as the
+gating factor.
+
+Consequence for the build: the manual entry form is a primary screen, not a secondary one. Speed of
+entry at ~70–90 events a month is a hard requirement on it.
+
+---
+
 ## Adding an entry
 
 Any new dependency, any deviation from these specs, and any resolution of an open question in
