@@ -6,7 +6,10 @@ transactions forever.
 
 ## The order of operations
 
-For each new draft, in strict order, stopping at the first hit:
+Categorisation operates on **events**, not rows. A collapsed group gets one category, applied to
+all its constituent rows. Never categorise an authorisation separately from its settlement.
+
+For each new draft event, in strict order, stopping at the first hit:
 
 1. **Rules** — deterministic pattern matches, ordered by `priority` ascending
 2. **Merchant memory** — a previously confirmed transaction with the same
@@ -38,6 +41,14 @@ interface Rule {
 
 First match by priority wins. Ties break by `created_at` ascending — older rules are more
 established. Record the winning rule in `transactions.applied_rule_id`.
+
+Two merchant shapes the matcher must handle, both observed in real statements:
+
+- **No merchant at all.** Common on DuitNow QR rows carrying only a reference and a rail. Fall back
+  to matching on the rail plus amount, or leave uncategorised — do not invent a merchant.
+- **A bare phone number as the merchant.** Two recurring monthly subscriptions appear this way, with
+  a US number and nothing else. `contains` matching on the number works; make sure normalisation
+  does not strip it as a reference token.
 
 Regex rules are supported but not offered in the "create rule from this edit" flow. They are a
 power-user escape hatch, typed by hand in settings. Compile them with a timeout and disable any
@@ -94,12 +105,16 @@ For descriptions that match nothing. Strictly a suggestion generator.
 A suggestion accepted by the owner becomes an ordinary learned rule, which means the second
 occurrence of that merchant costs nothing. The LLM is a cold-start tool, not a runtime dependency.
 
-Use the cheapest current Haiku-tier model. Do not hardcode a model string from memory — check
-https://docs.claude.com/en/docs/about-claude/models for the current identifiers and put it in an
-env var.
+Provider is Cerebras, via its OpenAI-compatible endpoint. Base URL and model name go in
+environment variables; do not hardcode a model identifier, and check Cerebras's current model list
+when wiring it up. Cerebras is fast enough that batching a month of unmatched strings is a
+sub-second call, which makes the caching rule above about cost and privacy rather than latency.
 
-**Never send the LLM anything that would violate `AGENTS.md` rule 8.** A merchant name is
-acceptable. A merchant name attached to an amount and a date is a spending profile.
+**Never send the model anything that would violate `AGENTS.md` rule 8.** A merchant name is
+acceptable. A merchant name attached to an amount and a date is a spending profile. This is a
+third-party inference provider, so the rule is absolute: no amounts, no dates, no balances, and in
+particular **no counterparty names** — person-to-person transfers carry real people's names in the
+merchant field and those must be filtered out before any request is built.
 
 ## Transfers
 
@@ -113,8 +128,12 @@ fastest way to make the dashboard lie.
 - Every chart and budget calculation excludes categories where `kind = 'transfer'`. Write this as a
   shared query helper in `lib/db/` so it cannot be forgotten in one place and applied in another.
 
-Whether DuitNow P2P transfers to other people should be treated as transfers or as spending is an
-open question in `product-spec.md`. Do not decide it in code.
+Person-to-person transfers are a large share of real activity, run in both directions via MAE QR,
+and carry the counterparty's name in the merchant field. Whether they are spending, transfers, or a
+category of their own is an open question in `product-spec.md`. Do not decide it in code.
+
+Own-account transfers — where the counterparty name matches the account holder — are unambiguous
+transfers and should be detected automatically.
 
 ## What not to build
 

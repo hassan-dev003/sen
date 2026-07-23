@@ -110,6 +110,71 @@ confirmed. ATM withdrawals pair as transfers. No unaccounted-cash screen.
 
 ---
 
+### D16 — Cerebras for LLM inference
+**Decided.** Any model calls in Sen go to Cerebras rather than a first-party model API. Integrate
+through its OpenAI-compatible endpoint with base URL and model name in environment variables, so
+the provider is swappable and no model identifier is hardcoded. Because this is a third-party
+inference provider handling data derived from bank records, the payload discipline in
+`docs/categorization.md` is a hard requirement, not a guideline: merchant strings only, never
+amounts, dates, balances, or counterparty names.
+
+---
+
+### D17 — Statement PDFs are a reconciliation source, not a live feed
+**Decided.** Maybank publishes a statement for month M only after month M ends, so import can never
+keep the ledger current. Its role is authoritative month-end verification: prove that what was
+captured during the month matches what the bank recorded, and catch anything missed. Day-to-day
+capture is a separate, faster path. Supersedes the framing in D1, which treated statement import as
+the primary ingestion route; the build order in D1 stands.
+
+---
+
+### D18 — Pre-authorisation triplets collapse into events, rows are retained
+**Decided.** *(Algorithm revised by D20.)* Card purchases routinely produce three ledger rows — authorisation, reversal,
+settlement — for one economic event, roughly a quarter of all rows in the observed sample. All
+three rows are written, preserving balance continuity and correspondence with the bank statement.
+They share an `event_group_id`, and the review queue and spending charts operate on events rather
+than rows. Collapsing by deleting rows was rejected: it would break the balance checks that make
+import trustworthy.
+
+---
+
+### D19 — Direction comes from the amount suffix, never the type name
+**Decided.** Maybank's type strings are misleading — `TRANSFER FROM A/C` carries a debit suffix and
+`FUND TRANSFER TO A/` carries a credit suffix. Direction is read from the trailing `+`/`-` and
+cross-checked against the balance movement. Disagreement fails the row loudly rather than resolving
+by preference.
+
+---
+
+### D20 — Event matching is order-independent and tolerates orphans
+**Decided.** Supersedes the matching algorithm sketched in D18. A three-month sample showed that
+statement order is posting order, not lifecycle order: reversals are printed before the
+authorisations they reverse. It also surfaced a second, two-row shape — a settlement reversal with
+no authorisation at all — and reversals whose authorisation sits in the previous month's statement.
+Matching therefore pairs on merchant, amount, and proximity in date, never on sequence, and leaves
+unmatched rows unmatched rather than failing. Cross-statement orphans are re-resolved when the
+adjacent month is imported.
+
+---
+
+### D21 — Consecutive statements chain, and that is a third integrity check
+**Decided.** Each month's beginning balance equals the previous month's ending balance, verified
+across three consecutive statements. This catches an entirely missing month, which neither the
+row-continuity check nor the statement-totals check can detect. It runs only when an adjacent month
+is already imported, and reports a gap as a warning rather than a hard failure, since importing out
+of order is legitimate.
+
+---
+
+### D22 — Recurring detection keys on cadence and descriptor, not on amount
+**Decided.** The clearest monthly recurring credit in the sample varies in amount month to month and
+carries the period as a suffix in its descriptor, and was absent entirely in one of three months.
+Requiring a stable amount would miss it. Detection keys on a stable normalised descriptor plus an
+approximate cadence, with amount treated as a typical value rather than a matching condition.
+
+---
+
 ## Adding an entry
 
 Any new dependency, any deviation from these specs, and any resolution of an open question in
