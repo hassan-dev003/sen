@@ -16,7 +16,7 @@ Formatting happens in `lib/money/` and nowhere else.
 ## Enums
 
 ```sql
-create type txn_source      as enum ('statement_pdf', 'finverse', 'manual');
+create type txn_source      as enum ('statement_pdf', 'm2u_history', 'finverse', 'manual');
 create type txn_direction   as enum ('debit', 'credit');
 create type txn_posting     as enum ('pending', 'posted');
 create type txn_review      as enum ('draft', 'confirmed', 'ignored');
@@ -89,6 +89,8 @@ create table import_batches (
   rows_inserted      int not null default 0,
   rows_duplicate     int not null default 0,
   balance_check      jsonb,        -- { ok: bool, breaks: [{ lineNo, expected, actual }] }
+  balance_anchor_cents bigint,     -- m2u_history: account balance shown on the print
+  anchor_reliable    boolean,      -- false when any float line was non-zero
   error              text,
   created_at         timestamptz not null default now()
 );
@@ -144,6 +146,7 @@ create table transactions (
   transfer_group_id     uuid,
   note                  text,
 
+  day_occurrence        int,            -- m2u_history: index within its date, counted oldest-first
   dedupe_hash           text not null,
   confirmed_at          timestamptz,
   created_at            timestamptz not null default now(),
@@ -164,7 +167,7 @@ create index transactions_booked  on transactions (user_id, booked_at desc);
 
 `event_group_id`, `event_role`, and `event_state` collapse a pre-authorisation group into one
 reviewable event while keeping every row. See
-`docs/statement-import.md#the-pre-authorisation-triplet`. The review queue and every spending
+`docs/event-collapse.md`. The review queue and every spending
 figure group by `event_group_id`; balance reconstruction does not. An event's amount is its
 settlement row, or zero if the authorisation was reversed without one.
 
