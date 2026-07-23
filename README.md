@@ -19,7 +19,8 @@ Sen splits the difference. Machines do the typing. A human does the confirming.
    browser. The view reaches back 90 days, so the same tool does routine capture and repairs any
    gap. Statement and API adapters are specced and deferred.
 2. **Dedupe.** Overlapping imports are collapsed using a content hash that includes the
-   statement's running balance. The same balance column is used to prove no rows were dropped.
+   an occurrence index within the day. Each capture carries the account balance, which is used to
+   prove nothing is missing.
 3. **Collapse.** Card purchases arrive as several ledger rows — an authorisation, its reversal,
    and a settlement. Around 30% of all rows are this. They are grouped into one economic *event*
    while every row is retained, so the ledger still matches the bank exactly.
@@ -67,7 +68,7 @@ pnpm install
 cp .env.example .env.local   # fill in Supabase keys
 pnpm supabase start          # local Postgres + Auth
 pnpm db:migrate
-pnpm db:seed                 # categories + a synthetic statement fixture
+pnpm db:seed                 # categories + a synthetic capture fixture
 pnpm dev
 ```
 
