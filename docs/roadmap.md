@@ -41,24 +41,19 @@ Every table in `docs/data-model.md`, with RLS.
 
 ---
 
-## Sprint 2 — Statement parser
+## Sprint 2 — History parser
 
 A pure library. No database, no Next.js, no upload UI.
 
-- [ ] `parseStatement(pages) -> ParsedStatement` implemented per `docs/statement-import.md`
-- [ ] `pdfjs-dist` extraction with positional data, separated from parsing
-- [ ] Line-splitting when extraction concatenates a date onto the previous line
-- [ ] Merchant resolution by line role, not line position (FPX blocks put it on line 3)
-- [ ] All fixtures in `docs/statement-import.md#testing` exist and pass (twenty of them)
-- [ ] Golden-file snapshots checked in
-- [ ] Balance continuity check implemented, with the `dropped-row` fixture proving it fires
-- [ ] Normaliser implemented with a `normalizer_version` constant
-- [ ] **Event collapse implemented per `docs/statement-import.md#collapse-algorithm`** — order
-      independent, tolerant of orphans, handling both the three-row and two-row shapes. This is the
-      hardest logic in the project and the most expensive to get wrong. Test it exhaustively.
+- [ ] Text-layer assertion: reject a rasterised print by name and cause before parsing
+- [ ] Three-line block parser per `docs/history-import.md`
+- [ ] Shared normaliser per `docs/normalisation.md`, with a `normalizer_version` constant
+- [ ] **Event collapse per `docs/event-collapse.md`** — order independent, orphan tolerant, both the
+      three-row and two-row shapes. The hardest logic in the project; test it exhaustively.
+- [ ] Balance anchor extraction, suppressed when any float line is non-zero
+- [ ] All fixtures in `docs/history-import.md#testing`
 
-**No longer blocked.** Both parser open questions are answered: statements are not password
-protected, and descriptions do not wrap.
+The statement parser is deferred (D26) and its spec is retained at `docs/statement-import.md`.
 
 ---
 
@@ -71,12 +66,12 @@ Wire the parser to the database. Still almost no UI — an upload form and a rep
 - [ ] `raw_rows` populated with verbatim source text for every row
 - [ ] Dedupe hash computed and enforced by unique constraint; `on conflict do nothing`
 - [ ] A batch failing the balance check inserts zero transactions and reports the breaking lines
-- [ ] All three balance checks: row continuity, statement totals, and chaining against the
-      adjacent month (the last is a warning, not a failure)
+- [ ] Balance verification: last verified balance plus everything captured since equals the balance
+      on the newest print. Surfaced as a running figure, never a hard gate.
 - [ ] Event grouping persisted, including regrouping rows from earlier batches when a later
       import supplies the missing half of a pair
-- [ ] Import report shows rows parsed, events after collapse, inserted / duplicate counts, and all
-      three balance results
+- [ ] Import report shows rows parsed, events after collapse, inserted / duplicate counts, and
+      whether the balance verifies
 - [ ] Rollback deletes a batch's drafts and unwinds any cross-batch regrouping it caused, and
       refuses if any row is confirmed
 - [ ] **Re-importing the same file twice inserts zero rows.** This is the sprint's key test.
@@ -88,8 +83,9 @@ Wire the parser to the database. Still almost no UI — an upload form and a rep
 
 The screens the owner will use more than any other.
 
-Manual entry is the decided capture path (D23) and carries the whole app until Finverse lands, so
-the entry form is a first-class screen here, not an afterthought bolted to the queue.
+M2U history import carries bank transactions (D24); manual entry covers cash and anything else the
+bank cannot see. The entry form is still a first-class screen, but it no longer has to absorb ninety
+events a month.
 
 - [ ] Draft list of **events**, not rows: date, description, amount, proposed category, source
       batch, with constituent rows visible on expand
@@ -101,8 +97,8 @@ the entry form is a first-class screen here, not an afterthought bolted to the q
 - [ ] Ignore action for rows that should never appear in the ledger
 - [ ] Usable on a phone
 - [ ] Playwright test: clear an 80-event queue using only the keyboard
-- [ ] Month-end reconciliation view: matched, in-bank-not-in-Sen, in-Sen-not-in-bank, with one-tap
-      resolution on each
+- [ ] Balance status is visible without hunting for it: verified, or off by RM X with a prompt to
+      widen the window and re-import
 
 ---
 
