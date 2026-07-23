@@ -66,9 +66,10 @@ Cash purchases, and anything captured during the month before the statement exis
 directly. Same form as editing a draft, entered as already-confirmed. Under ten seconds for date,
 amount, category, note.
 
-Real volume is roughly 70–90 economic events a month, most of them small and repetitive — the same
-handful of merchant strings recurring many times each. Whatever this screen becomes, it has to
-survive that. How to make it survive it is an open question below.
+This is the primary capture path for the whole app until a live feed exists. Real volume is roughly
+70–90 economic events a month, most of them small and repetitive — the same handful of merchant
+strings recurring many times each. The form has to survive that, so speed of entry is a hard
+requirement on this screen, not a nice-to-have.
 
 ### Budgets and review
 
@@ -121,9 +122,9 @@ These need the owner's answer before the sprint that depends on them.
 
 | Question | Blocks | Status |
 | --- | --- | --- |
-| Given ~70–90 events a month, how is spending captured *during* the month? Manual entry alone, one-tap presets for the top recurring merchants, or something else? | S4 | **Open — highest priority** |
 | What is the starting category taxonomy? | S1 seed | Open |
 | Should MAE QR person-to-person transfers be spending, transfers, or their own category? They are high-volume and run in both directions. | S5 | Open |
 | Should confirmed transactions be editable after the fact, or locked? | S4 | Open |
 | Are Maybank e-statement PDFs password protected? | S2 | **Answered — no.** Three statements extracted cleanly as text. |
 | Does the description column wrap onto a second line? | S2 | **Answered — no.** Blocks are 1–4 discrete lines; the merchant is truncated at 20 characters rather than wrapped. |
+| How is spending captured during the month? | S4 | **Answered — manual entry** (D23), with statement import confirming it at the start of the following month and Finverse replacing it when available. |
