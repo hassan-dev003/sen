@@ -29,9 +29,24 @@ The owner downloads a monthly statement PDF from Maybank2u and drops it into Sen
 checks the running-balance arithmetic to prove nothing was dropped, discards rows already imported,
 and produces a batch of drafts.
 
-Import always ends on a report screen: rows found, rows new, rows skipped as duplicates, and any
-balance discontinuities. The owner should be able to tell at a glance whether the import was clean.
-An import with a balance discontinuity is flagged loudly and can be rolled back as a unit.
+Import always ends on a report screen: rows found, events after collapse, rows new, rows skipped as
+duplicates, and the result of all three balance checks. The owner should be able to tell at a glance
+whether the import was clean. An import with a balance discontinuity is flagged loudly and can be
+rolled back as a unit. A gap against the previous month's closing balance is a warning, not a
+failure — importing out of order is legitimate.
+
+### Reconcile
+
+Statements arrive a month late — Maybank does not publish the current month — so import is not a
+live feed. Its job is to be the authority at month end.
+
+After importing, Sen compares what the bank recorded against what was captured during the month and
+shows three lists: matched, in-bank-but-not-in-Sen (forgotten — one tap to add), and
+in-Sen-but-not-in-bank (double-logged or mistyped — one tap to fix).
+
+This is what makes intra-month capture safe. The failure mode of every manual budget app is not the
+typing, it is never knowing what you missed, so you stop trusting the total. Monthly reconciliation
+removes that doubt, and keeps doing so even after an API feed exists.
 
 ### Review
 
@@ -47,8 +62,13 @@ descriptions matching this pattern as X*. Accepting applies it to the rest of th
 
 ### Manual entry
 
-Cash purchases and anything else the bank doesn't see get typed in directly. Same form as editing
-a draft, entered as already-confirmed. Under ten seconds for date, amount, category, note.
+Cash purchases, and anything captured during the month before the statement exists, get typed in
+directly. Same form as editing a draft, entered as already-confirmed. Under ten seconds for date,
+amount, category, note.
+
+Real volume is roughly 70–90 economic events a month, most of them small and repetitive — the same
+handful of merchant strings recurring many times each. Whatever this screen becomes, it has to
+survive that. How to make it survive it is an open question below.
 
 ### Budgets and review
 
@@ -60,8 +80,13 @@ Monthly budget per category. The dashboard answers three questions, in this orde
 
 ### Recurring
 
-Sen detects transactions that repeat at a regular cadence with a stable amount and surfaces them
-as a list of committed monthly spend. Detection proposes; it does not act.
+Sen detects transactions that repeat at a regular cadence and surfaces them as a list of committed
+monthly spend. Detection proposes; it does not act.
+
+**Detection keys on cadence and a stable normalised descriptor, not on a stable amount.** The
+clearest monthly item in the sample varies in amount month to month, carries the period as a suffix
+in its descriptor, and was missing entirely from one of three months. Amount is a typical value, not
+a matching condition.
 
 ## Non-goals
 
@@ -92,12 +117,13 @@ of that and v1 is finished.
 
 ## Open questions
 
-These need the owner's answer before the sprint that depends on them:
+These need the owner's answer before the sprint that depends on them.
 
 | Question | Blocks | Status |
 | --- | --- | --- |
-| Are Maybank e-statement PDFs password protected? If so, how is the password derived? | S2 | Open |
-| Does the statement description column ever wrap onto a second line? | S2 | Open |
+| Given ~70–90 events a month, how is spending captured *during* the month? Manual entry alone, one-tap presets for the top recurring merchants, or something else? | S4 | **Open — highest priority** |
 | What is the starting category taxonomy? | S1 seed | Open |
-| Does the owner want DuitNow QR merchant payments and P2P transfers separated automatically? | S5 | Open |
+| Should MAE QR person-to-person transfers be spending, transfers, or their own category? They are high-volume and run in both directions. | S5 | Open |
 | Should confirmed transactions be editable after the fact, or locked? | S4 | Open |
+| Are Maybank e-statement PDFs password protected? | S2 | **Answered — no.** Three statements extracted cleanly as text. |
+| Does the description column wrap onto a second line? | S2 | **Answered — no.** Blocks are 1–4 discrete lines; the merchant is truncated at 20 characters rather than wrapped. |
