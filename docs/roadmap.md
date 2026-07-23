@@ -53,7 +53,7 @@ A pure library. No database, no Next.js, no upload UI.
 - [ ] Balance anchor extraction, suppressed when any float line is non-zero
 - [ ] All fixtures in `docs/history-import.md#testing`
 
-The statement parser is deferred (D26) and its spec is retained at `docs/statement-import.md`.
+The statement parser is deferred (D19) and its spec is retained at `docs/statement-import.md`.
 
 ---
 
@@ -83,7 +83,7 @@ Wire the parser to the database. Still almost no UI — an upload form and a rep
 
 The screens the owner will use more than any other.
 
-M2U history import carries bank transactions (D24); manual entry covers cash and anything else the
+M2U history import carries bank transactions (D17); manual entry covers cash and anything else the
 bank cannot see. The entry form is still a first-class screen, but it no longer has to absorb ninety
 events a month.
 
@@ -158,7 +158,6 @@ limited quota on request.
 - [ ] **No changes required below `SourceAdapter`.** If this sprint touches the deduper, the event
       collapser, the rules engine, or the review queue, the Sprint 3 abstraction was wrong and that
       is the finding.
-- [ ] Statement import is retained as the month-end reconciliation authority (D17), not removed
 
 ---
 
