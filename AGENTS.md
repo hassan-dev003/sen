@@ -32,7 +32,11 @@ These are not preferences. Violating one is a defect regardless of whether tests
    no file system. This is what makes them testable against fixtures.
 7. **Secrets never reach the client.** No Supabase service key, no Finverse credentials, no
    Anthropic key in any `NEXT_PUBLIC_` variable or client component.
-8. **Never log transaction contents.** Amounts, descriptions, balances, and account identifiers do
+8. **Events for money questions, rows for balance questions.** A card purchase is several rows and
+   one event. Every spending figure — charts, budgets, category totals, the review queue — groups by
+   `event_group_id`. Every balance figure reconstructs from rows. Summing rows to answer "how much
+   did I spend" double-counts authorisations and is the easiest way to make Sen quietly wrong.
+9. **Never log transaction contents.** Amounts, descriptions, balances, and account identifiers do
    not go to `console.log`, error trackers, or analytics. Log row counts and IDs. This applies to
    caught exceptions too — sanitise before rethrowing.
 
