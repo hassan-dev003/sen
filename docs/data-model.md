@@ -25,6 +25,9 @@ create type category_kind   as enum ('expense', 'income', 'transfer');
 create type batch_status    as enum ('parsing', 'ready', 'imported', 'failed', 'rolled_back');
 create type rule_field      as enum ('description_normalized', 'reference');
 create type rule_match      as enum ('contains', 'starts_with', 'exact', 'regex');
+create type event_role      as enum ('single', 'authorization', 'auth_reversal',
+                                     'settlement', 'settlement_reversal');
+create type event_state     as enum ('resolved', 'pending', 'cancelled', 'orphan');
 ```
 
 ## Tables
@@ -122,7 +125,6 @@ create table transactions (
   review_state          txn_review not null default 'draft',
 
   booked_at             date not null,
-  value_date            date,
   amount_cents          bigint not null check (amount_cents > 0),
   direction             txn_direction not null,
   balance_after_cents   bigint,
@@ -130,7 +132,12 @@ create table transactions (
   description_raw       text not null,
   description_normalized text not null,
   reference             text,
-  merchant              text,
+  merchant              text,           -- may be null, or a bare phone number
+  merchant_truncated    boolean not null default false,
+  rail                  text,           -- DUITNOW QR, MAE QR, PAYMENT VIA MYDEBIT, ...
+  event_group_id        uuid,           -- shared by all rows of one economic event
+  event_role            event_role not null default 'single',
+  event_state           event_state not null default 'resolved',
 
   category_id           uuid references categories(id) on delete set null,
   applied_rule_id       uuid references rules(id) on delete set null,
@@ -151,8 +158,25 @@ create unique index transactions_external
   where external_id is not null;
 
 create index transactions_review  on transactions (user_id, review_state);
+create index transactions_event   on transactions (user_id, event_group_id);
 create index transactions_booked  on transactions (user_id, booked_at desc);
 ```
+
+`event_group_id`, `event_role`, and `event_state` collapse a pre-authorisation group into one
+reviewable event while keeping every row. See
+`docs/statement-import.md#the-pre-authorisation-triplet`. The review queue and every spending
+figure group by `event_group_id`; balance reconstruction does not. An event's amount is its
+settlement row, or zero if the authorisation was reversed without one.
+
+`event_state` carries the outcomes that only appear at statement boundaries:
+
+- `resolved` — matched and complete
+- `pending` — an authorisation with no reversal yet; provisional, re-resolved on the next import
+- `cancelled` — authorised then reversed with no settlement; nets to zero
+- `orphan` — a reversal whose authorisation is in a statement not yet imported
+
+`pending` and `orphan` are **normal states, not errors.** Grouping runs across statement
+boundaries, so rows from an already-imported batch can be regrouped by a later import.
 
 `transfer_group_id` pairs the two legs of a movement between own accounts — an ATM withdrawal
 debiting the bank and crediting cash. Both legs share the id. Charts must exclude transactions
@@ -234,7 +258,7 @@ create table recurring_series (
   label               text not null,
   match_value         text not null,
   cadence_days        int not null,
-  typical_amount_cents bigint not null,
+  typical_amount_cents bigint not null,   -- typical, not a matching condition — see D22
   category_id         uuid references categories(id) on delete set null,
   last_seen_at        date,
   next_expected_at    date,
