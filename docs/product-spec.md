@@ -46,7 +46,7 @@ failure — importing out of order is legitimate.
 
 ### Verify
 
-There is no month-end ritual. Every print carries the account's current balance, so each import
+Every print carries the account's current balance, so each import
 checks itself: everything Sen holds for that account should add up to the balance on the newest
 capture. Verified, or off by an amount.
 
@@ -133,4 +133,4 @@ These need the owner's answer before the sprint that depends on them.
 | Should confirmed transactions be editable after the fact, or locked? | S4 | Open |
 | Are Maybank e-statement PDFs password protected? | S2 | **Answered — no.** Three statements extracted cleanly as text. |
 | Does the description column wrap onto a second line? | S2 | **Answered — no.** Blocks are 1–4 discrete lines; the merchant is truncated at 20 characters rather than wrapped. |
-| How is spending captured? | S4 | **Answered — M2U history print-to-PDF** (D24) for bank transactions, manual entry for cash. Statement import deferred (D26). |
+| How is spending captured? | S4 | **Answered — M2U history print-to-PDF** (D17) for bank transactions, manual entry for cash. Statement import deferred (D19). |
