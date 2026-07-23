@@ -74,5 +74,9 @@ pnpm dev
 
 ## Status
 
-Pre-Sprint 0. Nothing is built yet. The specs in `docs/` are the source of truth; if the code and
-the docs disagree, that is a bug in one of them and should be raised, not silently resolved.
+Sprint 0 (Scaffold) complete. The authenticated shell, magic-link auth restricted to a single
+email, and CI (typecheck, lint, test) are in place; a hosted Supabase project is provisioned. The
+data model (Sprint 1) is next — no tables exist yet.
+
+The specs in `docs/` are the source of truth; if the code and the docs disagree, that is a bug in
+one of them and should be raised, not silently resolved.

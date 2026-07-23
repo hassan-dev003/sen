@@ -55,9 +55,11 @@ Retroactive application exists only as an explicit action with a preview.
 ---
 
 ### D8 — Next.js + Supabase + Vercel
-**Assumed.** Chosen because it matches the owner's existing stack and the sibling GID project,
-so the shell, auth patterns, and deployment are already familiar. Reversible until Sprint 1 ships.
-Confirm before starting Sprint 0.
+**Decided.** Confirmed by the owner at the start of Sprint 0. Matches the owner's existing stack and
+the sibling GID project, so the shell, auth patterns, and deployment are already familiar. The
+Sprint 0 scaffold is built on it: Next.js App Router + TypeScript strict, Supabase/Postgres with
+RLS, Supabase Auth magic-link, Tailwind, Vitest, and a hosted Supabase project provisioned in
+`ap-southeast-1`.
 
 ---
 

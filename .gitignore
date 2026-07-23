@@ -1,0 +1,26 @@
+# dependencies
+/node_modules
+.pnp
+.pnp.*
+
+# next
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# testing
+/coverage
+
+# env — never commit real secrets
+.env
+.env.local
+.env*.local
+
+# supabase local
+/supabase/.temp
+/supabase/.branches
+
+# misc
+.DS_Store
+*.log
