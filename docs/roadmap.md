@@ -88,8 +88,8 @@ Wire the parser to the database. Still almost no UI — an upload form and a rep
 
 The screens the owner will use more than any other.
 
-**Blocked on:** the intra-month capture question in `docs/product-spec.md#open-questions`. Build the
-review queue first; ask before designing the capture screen.
+Manual entry is the decided capture path (D23) and carries the whole app until Finverse lands, so
+the entry form is a first-class screen here, not an afterthought bolted to the queue.
 
 - [ ] Draft list of **events**, not rows: date, description, amount, proposed category, source
       batch, with constituent rows visible on expand
