@@ -19,9 +19,14 @@ Sen splits the difference. Machines do the typing. A human does the confirming.
    Both are normalised into one shared record shape.
 2. **Dedupe.** Overlapping imports are collapsed using a content hash that includes the
    statement's running balance. The same balance column is used to prove no rows were dropped.
-3. **Draft.** A rules engine assigns a category, merchant, and tags. Nothing is final.
-4. **Review.** Drafts land in a queue. You confirm, edit, or ignore. Every edit can become a rule.
-5. **Ledger.** Confirmed transactions drive budgets, charts, and recurring-spend detection.
+3. **Collapse.** Card purchases arrive as several ledger rows — an authorisation, its reversal,
+   and a settlement. Around 30% of all rows are this. They are grouped into one economic *event*
+   while every row is retained, so the ledger still matches the bank exactly.
+4. **Draft.** A rules engine assigns a category, merchant, and tags to each event. Nothing is final.
+5. **Review.** Drafts land in a queue. You confirm, edit, or ignore. Every edit can become a rule.
+6. **Reconcile.** At month end the statement is the authority: anything the bank recorded that Sen
+   missed gets added, anything Sen has that the bank doesn't gets flagged.
+7. **Ledger.** Confirmed events drive budgets, charts, and recurring-spend detection.
 
 ## Stack
 
