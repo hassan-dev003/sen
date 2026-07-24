@@ -74,9 +74,14 @@ pnpm dev
 
 ## Status
 
-Sprint 0 (Scaffold) complete. The authenticated shell, magic-link auth restricted to a single
-email, and CI (typecheck, lint, test) are in place; a hosted Supabase project is provisioned. The
-data model (Sprint 1) is next — no tables exist yet.
+Sprint 1 (Data model) complete. Every table in `docs/data-model.md` exists via migrations, with
+RLS on all of them; a second-user isolation test proves cross-user rows are invisible table by
+table. `lib/money/` handles integer-cents arithmetic and MYR formatting, and the seed creates a
+bank account, a cash account, and a minimal category set. Deployed on Vercel; auth works
+end to end.
+
+Still no UI beyond the authenticated shell — the review queue, import, ledger, budgets, and
+settings arrive in later sprints.
 
 The specs in `docs/` are the source of truth; if the code and the docs disagree, that is a bug in
 one of them and should be raised, not silently resolved.

@@ -3,7 +3,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["lib/**/*.test.ts", "tests/**/*.test.ts"],
+    // Unit tests only. The RLS integration test needs a live Postgres and runs
+    // via a separate config (vitest.integration.config.ts) in its own CI job.
+    include: ["lib/**/*.test.ts"],
     globals: false,
   },
 });
