@@ -115,18 +115,41 @@ and re-importing would create duplicates. Counting from the oldest end keeps exi
 as a day grows.
 
 **Balance anchor.** Every print carries the account's current balance, and all float lines were zero
-in the sample. That gives back a completeness check the statement's absence would otherwise cost:
+in the sample. Checking captures against it needs a starting point, since a running total has to
+count from somewhere:
 
 ```
-last_statement_closing_balance + sum(signed amounts captured since) === current_balance_on_print
+opening_balance + sum(signed amounts on or after opening_balance_at) === balance_on_newest_print
 ```
 
-Only meaningful when capture since the last statement is complete, so surface it as a running
-figure — "your captured transactions account for the balance exactly" or "off by RM X" — rather
-than as a hard gate. A non-zero float line invalidates it; check for that before asserting.
+`opening_balance` and `opening_balance_at` live on the account. **Derive them, then have the owner
+confirm.** On the first import, everything needed is already present:
+
+```
+opening_balance = balance_on_print − sum(signed amounts across the whole first capture set)
+opening_balance_at = the oldest booked_at in that capture set
+```
+
+Show the derived figure and let the owner accept or overwrite it. Do not silently compute and move
+on: if the first capture session missed a page, the error is baked into the baseline permanently and
+every subsequent check reports a clean zero while the ledger is quietly wrong. One human glance at
+one number closes that hole for good.
+
+Surface the result as a running figure — "your captures account for the balance exactly" or "off by
+RM X" — never as a gate. A non-zero float line invalidates the comparison; check `anchor_reliable`
+before asserting.
+
+**When it drifts,** two remedies in order:
+
+1. **Widen the window and re-import.** The actual fix, and the reason the 30/60/90 day selector
+   matters. Dedupe absorbs the overlap and the missing rows fill in.
+2. **Post an adjustment.** When a difference cannot be resolved — a transaction that fell outside
+   90 days, or one the history view never showed — the owner posts an explicit adjustment entry for
+   the difference. See D21. Sen proposes the amount; it never posts one by itself.
 
 Store the anchor per import batch. Three prints taken minutes apart carried the same value, which is
-itself a useful cross-check that they belong to one capture session.
+a useful cross-check that they belong to one session. If prints in one session disagree, a
+transaction landed mid-capture: use the newest balance and re-check.
 
 ## Event collapse spans captures
 
