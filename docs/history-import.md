@@ -19,17 +19,30 @@ The history view paginates at roughly ten rows per page, so a week of activity i
 prints and a full month is around nine. Each print is one paginator page; use the ‹ › controls
 between prints.
 
-## First check on ingest
+## Layers
 
-Before parsing anything, assert the file has a text layer:
+Three, kept apart — see `AGENTS.md` rule 6. Binary input does not make a function impure; only
+*acquiring* the bytes is I/O.
+
+| Layer | Signature | Purity | Sprint |
+| --- | --- | --- | --- |
+| Extract | `extract(bytes: Uint8Array) -> string[]` | Pure. The only module with a PDF dependency. | 2 |
+| Parse | `parse(lines: string[]) -> ParsedCapture` | Pure. No dependencies. | 2 |
+| Ingest | upload, storage, batch record, error wording | I/O. Lives in `app/`. | 3 |
+
+## Text layer check
+
+`extract` asserts, before returning:
 
 ```
 extracted_character_count > 0
 ```
 
-Zero characters means a rasterised print. Reject the upload with a message naming the cause and the
-fix — the wrong print destination — rather than failing somewhere deeper in the parser. This will
-happen, because the two options sit next to each other in the same dropdown.
+Zero characters means a rasterised print. `extract` throws a typed `RasterisedCaptureError`; the
+ingest layer catches it and shows a message naming the cause and the fix — the wrong print
+destination. Splitting it this way is what lets the check be fixture-tested with no upload path in
+existence. This will happen in practice, because the two print destinations sit next to each other
+in the same dropdown.
 
 ## Format
 
@@ -132,10 +145,19 @@ the balance anchor, and a shortfall is repaired by widening the capture window a
 
 Synthetic fixtures only, in `tests/fixtures/history/`.
 
+**Extract layer** — two tiny PDFs, the only binary fixtures in the repo. Both must be synthetic:
+generate them by printing a fake page, never from a real capture.
+
+| Fixture | Asserts |
+| --- | --- |
+| `text-layer.pdf` | A browser-exported PDF yields lines in reading order |
+| `rasterised.pdf` | Zero-character text layer throws `RasterisedCaptureError` |
+
+**Parse layer** — `.txt` files, each generated from real `extract` output with the content replaced.
+
 | Fixture | Asserts |
 | --- | --- |
 | `clean-print.txt` | Ten three-line blocks parse; furniture discarded |
-| `rasterised.pdf` | Zero-text-layer file is rejected with the print-destination message |
 | `clipped-first-row.txt` | Row visually clipped by the sticky header still parses |
 | `same-day-repeats.txt` | Two identical amounts on one day both survive; indices oldest-first |
 | `growing-day.txt` | Re-import after a new same-day transaction creates no duplicates |
