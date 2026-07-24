@@ -76,8 +76,14 @@ Wire the parser to the database. Still almost no UI — an upload form and a rep
 - [ ] `raw_rows` populated with verbatim source text for every row
 - [ ] Dedupe hash computed and enforced by unique constraint; `on conflict do nothing`
 - [ ] A batch failing the balance check inserts zero transactions and reports the breaking lines
-- [ ] Balance verification: last verified balance plus everything captured since equals the balance
-      on the newest print. Surfaced as a running figure, never a hard gate.
+- [ ] Migrations for `accounts.opening_balance_cents` / `opening_balance_at`,
+      `transactions.is_adjustment`, and the seeded `Unaccounted` category
+- [ ] First import derives the opening balance and presents it for confirmation; it is editable
+      afterwards and is never set silently
+- [ ] Balance verification: opening balance plus everything captured on or after
+      `opening_balance_at` equals the balance on the newest print. A running figure, never a gate.
+      Suppressed when `anchor_reliable` is false.
+- [ ] Prints in one session that disagree on the balance are flagged, newest wins
 - [ ] Event grouping persisted, including regrouping rows from earlier batches when a later
       import supplies the missing half of a pair
 - [ ] Import report shows rows parsed, events after collapse, inserted / duplicate counts, and
@@ -109,6 +115,8 @@ events a month.
 - [ ] Playwright test: clear an 80-event queue using only the keyboard
 - [ ] Balance status is visible without hunting for it: verified, or off by RM X with a prompt to
       widen the window and re-import
+- [ ] Posting an adjustment for a difference that survives a wider re-import — Sen offers the
+      amount, the owner confirms, and it lands in `Unaccounted` like any other transaction
 
 ---
 
