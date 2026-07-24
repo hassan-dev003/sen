@@ -42,12 +42,19 @@ create table accounts (
   kind          account_kind not null,
   institution   text,
   currency      char(3) not null default 'MYR',
+  opening_balance_cents bigint,
+  opening_balance_at    date,
   archived_at   timestamptz,
   created_at    timestamptz not null default now()
 );
 ```
 
 Seed creates two: the bank account, and a `cash` account for manual entry.
+
+`opening_balance_cents` and `opening_balance_at` are the baseline every balance check counts from.
+They are null until the first import derives them and the owner confirms — see
+`docs/history-import.md#no-running-balance`. Both are editable afterwards; changing either
+re-computes the check and nothing else.
 
 ### categories
 
@@ -71,6 +78,9 @@ check trigger, not in application code.
 
 The starting taxonomy is an open question in `product-spec.md`. Do not invent one; seed a minimal
 set (Food, Transport, Bills, Shopping, Health, Income, Transfer) and let the owner extend.
+
+Seed one further category, `Unaccounted` (kind `expense`), which adjustment entries land in. It is
+not part of the taxonomy question — it exists for D21 and should not be archived.
 
 ### import_batches
 
@@ -145,6 +155,7 @@ create table transactions (
   applied_rule_id       uuid references rules(id) on delete set null,
   transfer_group_id     uuid,
   note                  text,
+  is_adjustment         boolean not null default false,
 
   day_occurrence        int,            -- m2u_history: index within its date, counted oldest-first
   dedupe_hash           text not null,
@@ -164,6 +175,12 @@ create index transactions_review  on transactions (user_id, review_state);
 create index transactions_event   on transactions (user_id, event_group_id);
 create index transactions_booked  on transactions (user_id, booked_at desc);
 ```
+
+`is_adjustment` marks a reconciliation entry: an explicit, owner-posted transaction closing a
+difference the capture path could not explain (D21). Ordinary in every other respect — it has a
+date, an amount, a direction, and the `Unaccounted` category — and it is **counted in charts**.
+Excluding it would balance the ledger while under-reporting spending, which is the wrong lie to
+tell. Deleting it is the normal way to retract one when the real transaction surfaces.
 
 `event_group_id`, `event_role`, and `event_state` collapse a pre-authorisation group into one
 reviewable event while keeping every row. See
@@ -271,6 +288,12 @@ create table recurring_series (
 ```
 
 Detection writes `confirmed = false`. The owner promotes. Nothing acts on an unconfirmed series.
+
+## Migrations after Sprint 1
+
+The schema above is the intended end state. Sprint 1 has shipped, so `accounts.opening_balance_*`,
+`transactions.is_adjustment`, and the `Unaccounted` seed category arrive as **new migrations** —
+never by editing an applied one (`AGENTS.md`).
 
 ## Row level security
 
