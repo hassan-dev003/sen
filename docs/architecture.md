@@ -49,12 +49,13 @@ app/                      Next.js routes and server actions. Thin.
 lib/
   sources/
     types.ts              SourceAdapter interface, RawTransaction
-    m2u-history/          print-to-PDF parser (pure)
+    m2u-history/
+      extract.ts          bytes -> lines. Pure. The ONLY module with a PDF dependency.
+      parse.ts            lines -> ParsedCapture. Pure. No dependencies.
     statement-pdf/        deferred — spec retained, not built
     finverse/             stub until Sprint 8
-  normalize/              description cleanup, direction inference
-  dedupe/                 hashing, day-scoped occurrence, balance verification
   normalize/              shared across sources — see docs/normalisation.md
+  dedupe/                 hashing, day-scoped occurrence, balance verification
   events/                 auth/reversal/settlement collapse. Pure. All sources.
   rules/                  matching, learning, application
   money/                  cents arithmetic and formatting. The only place.
