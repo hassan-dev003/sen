@@ -21,6 +21,13 @@ next-env.d.ts
 /supabase/.temp
 /supabase/.branches
 
+# real financial data — never commit (AGENTS.md "Working with real bank data")
+# the two synthetic extract-layer fixtures are the only PDFs allowed in this repo
+*.pdf
+!tests/fixtures/**/*.pdf
+/captures/
+/statements/
+
 # misc
 .DS_Store
 *.log
