@@ -16,12 +16,14 @@
     "db:migrate": "supabase db push",
     "db:migrate:local": "supabase migration up --local",
     "db:reset": "supabase db reset",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "fixtures:generate": "tsx scripts/generate-fixtures.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.58.0",
     "next": "^15.5.4",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -33,6 +35,7 @@
     "@types/react-dom": "^19.2.0",
     "eslint": "^9.37.0",
     "eslint-config-next": "^15.5.4",
+    "pdf-lib": "^1.17.1",
     "supabase": "^2.48.3",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.6",
@@ -41,6 +44,10 @@
   },
   "packageManager": "pnpm@10.33.0",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
