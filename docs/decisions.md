@@ -206,6 +206,33 @@ touches one file.
 
 ---
 
+
+### D21 — A confirmed opening balance is the baseline; unresolved differences become adjustments
+**Decided.** Balance verification needs a point to count from, and with statement import deferred
+there is no closing balance to inherit. Two parts.
+
+**The baseline is derived, then confirmed.** The first import already contains everything needed:
+the account balance is on the print, and subtracting the captured transactions gives the balance
+before them. Sen computes it and shows it; the owner accepts or overwrites. Deriving silently was
+rejected — a first capture that missed a page would bake the error into the baseline forever, and
+every later check would report a clean zero against a ledger that is wrong. Asking the owner to
+supply the figure unaided was also rejected: they would have to reconstruct a historical balance
+by hand, and a pre-filled number they can sanity-check is both easier and more accurate.
+
+**Unresolved differences become explicit adjustments.** Widening the capture window is the first
+remedy. When a difference survives that — something older than 90 days, or a transaction the history
+view never showed — the owner posts one entry for the difference in an `Unaccounted` category,
+following ordinary reconciliation practice: park the unknown somewhere visible rather than letting
+it distort everything around it.
+
+Adjustments are ordinary transactions flagged `is_adjustment`, and they **count in charts**. Hiding
+them would make the ledger balance while the spending picture under-reports, which is a worse
+failure than an ugly category. Being visible is also what creates pressure to resolve them, and
+deleting one is the normal retraction when the real transaction turns up.
+
+Sen never posts an adjustment by itself. It offers the figure; the owner decides — consistent with
+D3.
+
 ---
 
 ## Adding an entry
