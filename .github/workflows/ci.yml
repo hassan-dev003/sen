@@ -32,3 +32,36 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ci_placeholder
           ALLOWED_EMAIL: ci@example.com
+
+  # The RLS isolation test — "the sprint" — runs against a real local Supabase
+  # stack (Postgres + Auth + PostgREST) so it exercises the actual policies.
+  rls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start Supabase (applies migrations)
+        run: pnpm exec supabase start
+
+      - name: Export local Supabase credentials
+        run: |
+          STATUS=$(pnpm exec supabase status -o json)
+          echo "SUPABASE_URL=$(echo "$STATUS" | jq -r '.API_URL')" >> "$GITHUB_ENV"
+          echo "SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      - name: Run RLS isolation test
+        run: pnpm test:rls
+
+      - name: Stop Supabase
+        if: always()
+        run: pnpm exec supabase stop

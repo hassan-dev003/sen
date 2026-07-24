@@ -30,12 +30,12 @@ real email.
 
 Every table in `docs/data-model.md`, with RLS.
 
-- [ ] All tables, enums, indexes, and constraints created via migrations
-- [ ] RLS enabled on every table with policies keyed on `auth.uid()`
-- [ ] A test authenticates as a second user and confirms zero rows visible from the first, table by
+- [x] All tables, enums, indexes, and constraints created via migrations
+- [x] RLS enabled on every table with policies keyed on `auth.uid()`
+- [x] A test authenticates as a second user and confirms zero rows visible from the first, table by
       table. This test is the sprint.
-- [ ] Seed script creates a bank account, a cash account, and a minimal category set
-- [ ] `lib/money/` with cents arithmetic and MYR formatting, fully unit tested
+- [x] Seed script creates a bank account, a cash account, and a minimal category set
+- [x] `lib/money/` with cents arithmetic and MYR formatting, fully unit tested
 
 **Do not build any UI this sprint.**
 
