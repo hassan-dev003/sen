@@ -29,8 +29,12 @@ These are not preferences. Violating one is a defect regardless of whether tests
    unique constraint, not by application logic alone.
 5. **RLS is on for every table.** No exceptions, no "we'll add it later" tables. Every policy is
    tested. The service-role key is never used in code that runs in response to a user request.
-6. **Parsers are pure functions.** `parse(text) -> ParsedCapture`. No database access, no network,
-   no file system. This is what makes them testable against fixtures.
+6. **Extraction and parsing are both pure; acquisition is not.** Three layers, kept apart.
+   `extract(bytes) -> string[]` turns PDF bytes into lines and is the only module allowed a PDF
+   dependency. `parse(lines) -> ParsedCapture` turns lines into rows and has no dependencies at all.
+   Neither touches the database, the network, or the file system — **receiving a `Uint8Array` is not
+   file system access**, so binary input does not make a function impure. *Acquiring* the bytes —
+   upload, storage, the batch record, rendering an error to a human — is I/O and lives in `app/`.
 7. **Secrets never reach the client.** No Supabase service key, no Finverse credentials, no
    Anthropic key in any `NEXT_PUBLIC_` variable or client component.
 8. **Events for money questions, rows for balance questions.** A card purchase is several rows and
