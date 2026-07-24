@@ -195,6 +195,17 @@ Deferring a source spec must never take core pipeline logic with it.
 
 ---
 
+### D20 — `pdfjs-dist` is the PDF text extractor
+**Decided.** The text extractor blessed by D10 is Mozilla's `pdfjs-dist` (legacy build), used only
+in `lib/sources/m2u-history/extract.ts`. It is pure JavaScript with no native binaries, accepts a
+`Uint8Array`, and runs the parse on the main thread with the worker disabled, so it works on
+Vercel's serverless runtime. `unpdf` was tried first and rejected: its bundled pdf.js throws a
+`structuredClone`/`postMessage` error under Node 22 in this environment. Text extraction needs no
+canvas or fonts, so none of pdf.js's optional rendering paths are pulled in. Swapping it later
+touches one file.
+
+---
+
 ---
 
 ## Adding an entry

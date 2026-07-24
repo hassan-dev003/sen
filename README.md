@@ -74,14 +74,16 @@ pnpm dev
 
 ## Status
 
-Sprint 1 (Data model) complete. Every table in `docs/data-model.md` exists via migrations, with
-RLS on all of them; a second-user isolation test proves cross-user rows are invisible table by
-table. `lib/money/` handles integer-cents arithmetic and MYR formatting, and the seed creates a
-bank account, a cash account, and a minimal category set. Deployed on Vercel; auth works
-end to end.
+Sprint 2 (History parser) complete. The M2U capture path is a pure library, tested exhaustively
+against synthetic fixtures: `extract` turns PDF bytes into lines (rejecting a rasterised print by
+name), `parse` segments the three-line blocks and reads the balance anchor, the shared normaliser
+converges merchants across sources, and event collapse folds auth/reversal/settlement rows into one
+economic event — order-independent and orphan-tolerant. Sprint 1's data model, RLS with a
+second-user isolation test, `lib/money/`, and the seed are in place; deployed on Vercel with auth
+working end to end.
 
-Still no UI beyond the authenticated shell — the review queue, import, ledger, budgets, and
-settings arrive in later sprints.
+Still no UI beyond the authenticated shell, and nothing is wired to the database yet — the import
+pipeline (Sprint 3), review queue, ledger, budgets, and settings arrive in later sprints.
 
 The specs in `docs/` are the source of truth; if the code and the docs disagree, that is a bug in
 one of them and should be raised, not silently resolved.
