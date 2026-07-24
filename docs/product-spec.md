@@ -35,14 +35,11 @@ Anything the bank cannot see — cash, mainly — is still typed in by hand.
 ### Import
 
 The owner downloads a monthly statement PDF from Maybank2u and drops it into Sen. Sen parses it,
-checks the running-balance arithmetic to prove nothing was dropped, discards rows already imported,
-and produces a batch of drafts.
+discards rows already imported, and produces a batch of drafts.
 
 Import always ends on a report screen: rows found, events after collapse, rows new, rows skipped as
-duplicates, and the result of all three balance checks. The owner should be able to tell at a glance
-whether the import was clean. An import with a balance discontinuity is flagged loudly and can be
-rolled back as a unit. A gap against the previous month's closing balance is a warning, not a
-failure — importing out of order is legitimate.
+duplicates, and whether the balance verifies. The owner should be able to tell at a glance whether
+the import was clean, and roll the batch back as a unit if it wasn't.
 
 ### Verify
 
@@ -53,6 +50,14 @@ capture. Verified, or off by an amount.
 When it is off, the repair is the same tool — switch the history view to 60 or 90 days, print, and
 re-import. Dedupe absorbs the overlap and the missing rows fill in. A missed fortnight is a minor
 inconvenience rather than a permanent hole.
+
+When a difference survives that — something older than 90 days, or a transaction the history view
+never showed — the owner posts an **adjustment**: one entry for the difference, in an `Unaccounted`
+category. It appears in the ledger and in the charts like any other transaction, because hiding it
+would make the totals balance while the spending picture quietly under-reports. If the real
+transaction later turns up, delete the adjustment.
+
+Sen never posts one on its own. It offers the figure; the owner decides.
 
 ### Review
 
