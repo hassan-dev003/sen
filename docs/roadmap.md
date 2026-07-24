@@ -46,17 +46,17 @@ Every table in `docs/data-model.md`, with RLS.
 A pure library: bytes in, structured events out. No database, no Next.js, no upload UI, no file
 system — `extract` receives a `Uint8Array` and the caller is responsible for having read it.
 
-- [ ] `extract(bytes) -> string[]` — the only module carrying a PDF dependency. Must accept a
+- [x] `extract(bytes) -> string[]` — the only module carrying a PDF dependency. Must accept a
       buffer and run on Vercel's serverless runtime, so no native binaries.
-- [ ] Text-layer assertion inside `extract`: zero characters throws a typed
+- [x] Text-layer assertion inside `extract`: zero characters throws a typed
       `RasterisedCaptureError`. Throwing it is Sprint 2; wording a message about the print
       destination for a human is Sprint 3.
-- [ ] Three-line block parser per `docs/history-import.md`, taking lines and depending on nothing
-- [ ] Shared normaliser per `docs/normalisation.md`, with a `normalizer_version` constant
-- [ ] **Event collapse per `docs/event-collapse.md`** — order independent, orphan tolerant, both the
+- [x] Three-line block parser per `docs/history-import.md`, taking lines and depending on nothing
+- [x] Shared normaliser per `docs/normalisation.md`, with a `normalizer_version` constant
+- [x] **Event collapse per `docs/event-collapse.md`** — order independent, orphan tolerant, both the
       three-row and two-row shapes. The hardest logic in the project; test it exhaustively.
-- [ ] Balance anchor extraction, suppressed when any float line is non-zero
-- [ ] All fixtures in `docs/history-import.md#testing`, both layers
+- [x] Balance anchor extraction, suppressed when any float line is non-zero
+- [x] All fixtures in `docs/history-import.md#testing`, both layers
 
 **Generate the `.txt` fixtures from real `extract` output**, never by hand. Hand-written fixtures
 encode guesses about line ordering and blank lines; if a guess is wrong, every parser test passes
