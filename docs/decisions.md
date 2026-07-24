@@ -74,9 +74,13 @@ at any point; charts are the last sprint and touch nothing else.
 in reading order — verified with `pypdf` on real captures — so no positional reconstruction is
 needed. Use any maintained text extractor; the parser depends only on line order.
 
-Ingest must assert a non-empty text layer before parsing. A rasterised print produces zero
-characters, and that failure has to be named at the door rather than surfacing as a confusing parse
-error deeper in.
+**The dependency is confined to `lib/sources/m2u-history/extract.ts` and appears nowhere else.**
+It must accept a buffer rather than a path, and must run on Vercel's serverless runtime, so no
+native binaries. Swapping it later should touch one file.
+
+`extract` asserts a non-empty text layer and throws a typed error when it is empty; the ingest layer
+turns that into wording for a human. A rasterised print produces zero characters, and that failure
+has to be named at the door rather than surfacing as a confusing parse error deeper in.
 
 ---
 
