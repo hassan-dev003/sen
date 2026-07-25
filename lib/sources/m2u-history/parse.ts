@@ -36,6 +36,12 @@ export interface ParsedCapture {
   balanceAnchorCents: number | null;
   /** False when any float line was non-zero, which invalidates the anchor. */
   anchorReliable: boolean;
+  /**
+   * False when prints in one capture disagree on the balance — a transaction
+   * landed mid-capture. The newest (first-printed) balance is used regardless
+   * (docs/history-import.md).
+   */
+  anchorConsistent: boolean;
   normalizerVersion: number;
 }
 
@@ -67,23 +73,27 @@ function parseAmount(line: string): { amountCents: number; direction: Direction 
 function readAnchor(lines: readonly string[]): {
   balanceAnchorCents: number | null;
   anchorReliable: boolean;
+  anchorConsistent: boolean;
 } {
-  let balanceAnchorCents: number | null = null;
+  const anchors: number[] = [];
   let sawNonZeroFloat = false;
 
   for (const line of lines) {
-    if (balanceAnchorCents === null) {
-      const m = /Current balance RM ([\d,]+\.\d{2})/i.exec(line);
-      if (m) balanceAnchorCents = parseMYR(m[1]!);
-    }
+    const m = /Current balance RM ([\d,]+\.\d{2})/i.exec(line);
+    if (m) anchors.push(parseMYR(m[1]!));
     for (const f of line.matchAll(/float RM ([\d,]+\.\d{2})/gi)) {
       if (parseMYR(f[1]!) !== 0) sawNonZeroFloat = true;
     }
   }
 
+  // Newest wins: the first-printed balance (M2U lists newest first).
+  const balanceAnchorCents = anchors.length > 0 ? anchors[0]! : null;
+  const anchorConsistent = anchors.every((a) => a === balanceAnchorCents);
+
   return {
     balanceAnchorCents,
-    anchorReliable: balanceAnchorCents !== null && !sawNonZeroFloat,
+    anchorReliable: balanceAnchorCents !== null && !sawNonZeroFloat && anchorConsistent,
+    anchorConsistent,
   };
 }
 

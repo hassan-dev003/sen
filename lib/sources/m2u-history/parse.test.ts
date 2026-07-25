@@ -100,4 +100,17 @@ describe("balance anchor", () => {
     expect(cap.balanceAnchorCents).toBe(523410); // still extracted
     expect(cap.anchorReliable).toBe(false); // but not trustworthy
   });
+
+  it("takes the newest balance and flags disagreement across prints", () => {
+    const cap = parse([
+      "Current balance RM 5,234.10 · One-day float RM 0.00",
+      "MAE QR HANI STORE * QR1",
+      "24 Jul 2026",
+      "- RM 9.90",
+      "Current balance RM 5,200.00 · One-day float RM 0.00",
+    ]);
+    expect(cap.balanceAnchorCents).toBe(523410); // newest (first) wins
+    expect(cap.anchorConsistent).toBe(false);
+    expect(cap.anchorReliable).toBe(false); // disagreement suppresses the check
+  });
 });
