@@ -108,6 +108,29 @@ export async function countBatchEvents(
   return groups.size;
 }
 
+/**
+ * The newest print's reliable balance anchor, for the running balance check on
+ * the review screen. Prints in one session share a value; a later session's
+ * newest print supersedes (docs/history-import.md). Suppressed anchors
+ * (`anchor_reliable = false`) are skipped so the check never asserts on a
+ * capture a non-zero float line made unreliable.
+ */
+export async function getLatestReliableAnchor(
+  supabase: SupabaseClient,
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("import_batches")
+    .select("balance_anchor_cents")
+    .eq("anchor_reliable", true)
+    .not("balance_anchor_cents", "is", null)
+    .order("period_end", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`getLatestReliableAnchor: ${error.message}`);
+  return data ? (data.balance_anchor_cents as number) : null;
+}
+
 export async function rollbackBatch(
   supabase: SupabaseClient,
   batchId: string,

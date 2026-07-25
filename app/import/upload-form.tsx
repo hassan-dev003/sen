@@ -15,17 +15,17 @@ export function UploadForm() {
         name="file"
         accept="application/pdf"
         required
-        className="text-sm file:mr-3 file:rounded-md file:border file:border-black/15 file:bg-transparent file:px-3 file:py-1.5 file:text-sm dark:file:border-white/20"
+        className="text-sm text-muted file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:text-ink hover:file:border-border-strong"
       />
       <button
         type="submit"
         disabled={pending}
-        className="w-fit rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+        className="w-fit rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
       >
         {pending ? "Importing…" : "Import capture"}
       </button>
       {state.status === "error" && (
-        <p className="text-sm text-red-600">{state.message}</p>
+        <p className="text-sm text-danger">{state.message}</p>
       )}
     </form>
   );

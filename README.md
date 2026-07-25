@@ -74,7 +74,20 @@ pnpm dev
 
 ## Status
 
-Sprint 3 (Import pipeline) complete. The parser is wired to the database: a capture PDF uploads to a
+Sprint 4 (Review queue and capture) is built. The draft queue presents collapsed **events**, not
+rows — date, merchant, amount, proposed category, with the constituent authorisation/reversal/
+settlement rows on expand, and pending/orphan/cancelled shown as calm chips rather than errors. It
+is keyboard-first (confirm, categorise, ignore, select, undo, `?` help) with an inline type-ahead
+category picker and bulk confirm; the queue's decision logic is a pure, exhaustively tested reducer
+(`lib/review/queue-reducer.ts`). Cash is typed in through a manual-entry form that lands confirmed,
+and a running balance banner shows "verified" or "off by RM X" with the widen-and-re-import prompt
+and an owner-confirmed adjustment into `Unaccounted` (D21). Confirmed transactions are editable with
+an audit trail (D22); that edit surface arrives with the ledger in Sprint 6. The browser-level
+Playwright e2e is the one open Sprint 4 item — the keyboard clear is covered at the logic level
+meanwhile. This sprint also establishes the app's design foundation: calm and minimal, teal-biased
+neutrals with one accent, both light and dark as first-class tokens.
+
+Sprint 3 (Import pipeline) is complete. The parser is wired to the database: a capture PDF uploads to a
 private per-user Storage bucket, is parsed and planned in memory, then written in one atomic
 transaction (an RLS-respecting plpgsql function) — `raw_rows` verbatim, transactions deduped by a
 `(user_id, dedupe_hash)` unique index with `on conflict do nothing`, and cross-batch event

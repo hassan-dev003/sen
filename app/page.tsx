@@ -1,4 +1,9 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { AppNav } from "@/app/components/app-nav";
+import { countDraftEvents } from "@/lib/db/transactions";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -6,32 +11,59 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-8 px-6 py-12">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Sen</h1>
-          <p className="text-sm opacity-70">
-            Signed in as {user?.email ?? "unknown"}
-          </p>
-        </div>
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/20"
-          >
-            Sign out
-          </button>
-        </form>
-      </header>
+  let draftCount = 0;
+  try {
+    draftCount = await countDraftEvents(supabase);
+  } catch {
+    draftCount = 0;
+  }
 
-      <section className="rounded-lg border border-black/10 p-6 dark:border-white/10">
-        <h2 className="text-lg font-medium">Nothing here yet</h2>
-        <p className="mt-2 text-sm opacity-70">
-          This is the authenticated shell. Import, review, ledger, budgets, and
-          settings arrive in later sprints.
-        </p>
-      </section>
-    </main>
+  return (
+    <>
+      <AppNav email={user?.email} />
+      <main className="mx-auto flex max-w-3xl flex-col gap-6 px-5 py-10">
+        <header className="flex flex-col gap-1">
+          <p className="eyebrow">Sen</p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {draftCount > 0
+              ? `${draftCount} ${draftCount === 1 ? "event" : "events"} waiting`
+              : "All caught up"}
+          </h1>
+          <p className="text-sm text-muted">
+            Machines type, humans confirm. Import a capture, then clear the queue.
+          </p>
+        </header>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/review"
+            className="group flex flex-col gap-1 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent"
+          >
+            <span className="text-sm font-medium">Review queue</span>
+            <span className="text-sm text-muted">
+              {draftCount > 0
+                ? `${draftCount} draft ${draftCount === 1 ? "event" : "events"} to confirm`
+                : "Nothing to review right now"}
+            </span>
+            <span className="mt-2 text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100">
+              Open →
+            </span>
+          </Link>
+
+          <Link
+            href="/import"
+            className="group flex flex-col gap-1 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent"
+          >
+            <span className="text-sm font-medium">Import a capture</span>
+            <span className="text-sm text-muted">
+              Print the M2U history to PDF, then drop it in
+            </span>
+            <span className="mt-2 text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100">
+              Open →
+            </span>
+          </Link>
+        </div>
+      </main>
+    </>
   );
 }

@@ -33,6 +33,29 @@ export async function getPrimaryBankAccount(
   };
 }
 
+/** The single cash account manual entries post to (D12). */
+export async function getCashAccount(
+  supabase: SupabaseClient,
+): Promise<Account | null> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("id, name, kind, opening_balance_cents, opening_balance_at")
+    .eq("kind", "cash")
+    .is("archived_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`getCashAccount: ${error.message}`);
+  if (!data) return null;
+  return {
+    id: data.id,
+    name: data.name,
+    kind: data.kind,
+    openingBalanceCents: data.opening_balance_cents,
+    openingBalanceAt: data.opening_balance_at,
+  };
+}
+
 export async function setOpeningBalance(
   supabase: SupabaseClient,
   accountId: string,
