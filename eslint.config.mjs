@@ -22,6 +22,12 @@ const eslintConfig = [
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
+      // A leading underscore marks a parameter kept only to satisfy a signature
+      // (e.g. a server action's (prevState, formData) shape). Honour that intent.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
 ];

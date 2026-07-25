@@ -1,25 +1,174 @@
 @import "tailwindcss";
 
+/*
+ * Sen's design foundation. Calm and minimal: teal-biased neutrals, one restrained
+ * accent, semantic colour kept meaningful and separate from that accent. Both
+ * themes are first-class — the palette is defined as tokens, and only the tokens
+ * change between light and dark. Style components through the tokens, never with
+ * a raw hex inside a media query.
+ *
+ * `prefers-color-scheme` carries the OS preference; a future in-app toggle can
+ * stamp `data-theme` on <html> and it wins in both directions.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  --ground: #fbfcfc;
+  --surface: #ffffff;
+  --surface-2: #f3f6f5;
+  --ink: #12201e;
+  --muted: #55655f;
+  --faint: #8a9a96;
+  --hairline: rgba(18, 32, 30, 0.1);
+  --hairline-strong: rgba(18, 32, 30, 0.16);
+  --accent: #0d9488;
+  --accent-hover: #0b8378;
+  --accent-soft: rgba(13, 148, 136, 0.1);
+  --accent-contrast: #ffffff;
+  --credit: #15803d;
+  --credit-soft: rgba(21, 128, 61, 0.1);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.12);
+  --danger: #b91c1c;
+  --danger-soft: rgba(185, 28, 28, 0.1);
+
+  /* Back-compat aliases for pre-Sprint-4 screens. */
+  --background: var(--ground);
+  --foreground: var(--ink);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+
+    --ground: #0b0f0e;
+    --surface: #141a19;
+    --surface-2: #1c2423;
+    --ink: #e7edeb;
+    --muted: #98a6a2;
+    --faint: #6d7b78;
+    --hairline: rgba(231, 237, 235, 0.1);
+    --hairline-strong: rgba(231, 237, 235, 0.18);
+    --accent: #2dd4bf;
+    --accent-hover: #45dccb;
+    --accent-soft: rgba(45, 212, 191, 0.14);
+    --accent-contrast: #06201d;
+    --credit: #34d399;
+    --credit-soft: rgba(52, 211, 153, 0.14);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251, 191, 36, 0.16);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.14);
   }
 }
 
+/* Explicit toggle overrides the OS preference, both directions. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ground: #fbfcfc;
+  --surface: #ffffff;
+  --surface-2: #f3f6f5;
+  --ink: #12201e;
+  --muted: #55655f;
+  --faint: #8a9a96;
+  --hairline: rgba(18, 32, 30, 0.1);
+  --hairline-strong: rgba(18, 32, 30, 0.16);
+  --accent: #0d9488;
+  --accent-hover: #0b8378;
+  --accent-soft: rgba(13, 148, 136, 0.1);
+  --accent-contrast: #ffffff;
+  --credit: #15803d;
+  --credit-soft: rgba(21, 128, 61, 0.1);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.12);
+  --danger: #b91c1c;
+  --danger-soft: rgba(185, 28, 28, 0.1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0b0f0e;
+  --surface: #141a19;
+  --surface-2: #1c2423;
+  --ink: #e7edeb;
+  --muted: #98a6a2;
+  --faint: #6d7b78;
+  --hairline: rgba(231, 237, 235, 0.1);
+  --hairline-strong: rgba(231, 237, 235, 0.18);
+  --accent: #2dd4bf;
+  --accent-hover: #45dccb;
+  --accent-soft: rgba(45, 212, 191, 0.14);
+  --accent-contrast: #06201d;
+  --credit: #34d399;
+  --credit-soft: rgba(52, 211, 153, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.16);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+}
+
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border: var(--hairline);
+  --color-border-strong: var(--hairline-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-credit: var(--credit);
+  --color-credit-soft: var(--credit-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  /* Back-compat aliases. */
+  --color-background: var(--ground);
+  --color-foreground: var(--ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--ground);
+  color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Amounts and any column of digits line up. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Uppercase micro-labels: eyebrows, stat captions. */
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* A single, consistent keyboard-focus treatment across the app. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
