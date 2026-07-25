@@ -34,8 +34,9 @@ jobs:
           ALLOWED_EMAIL: ci@example.com
 
   # The RLS isolation test — "the sprint" — runs against a real local Supabase
-  # stack (Postgres + Auth + PostgREST) so it exercises the actual policies.
-  rls:
+  # stack (Postgres + Auth + PostgREST): RLS isolation and the atomic import
+  # pipeline (dedupe, cross-batch regrouping, rollback) against real Postgres.
+  integration:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,8 +60,8 @@ jobs:
           echo "SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
           echo "SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
 
-      - name: Run RLS isolation test
-        run: pnpm test:rls
+      - name: Run integration tests (RLS + import pipeline)
+        run: pnpm test:integration
 
       - name: Stop Supabase
         if: always()

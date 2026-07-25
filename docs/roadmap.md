@@ -71,27 +71,30 @@ The statement parser is deferred (D19) and its spec is retained at `docs/stateme
 
 Wire the parser to the database. Still almost no UI — an upload form and a report page.
 
-- [ ] Upload to a private Supabase Storage bucket, per-user path prefix
-- [ ] Full parse and validate in memory, then a single atomic database transaction
-- [ ] `raw_rows` populated with verbatim source text for every row
-- [ ] Dedupe hash computed and enforced by unique constraint; `on conflict do nothing`
+- [x] Upload to a private Supabase Storage bucket, per-user path prefix
+- [x] Full parse and validate in memory, then a single atomic database transaction
+- [x] `raw_rows` populated with verbatim source text for every row
+- [x] Dedupe hash computed and enforced by unique constraint; `on conflict do nothing`
 - [ ] A batch failing the balance check inserts zero transactions and reports the breaking lines
-- [ ] Migrations for `accounts.opening_balance_cents` / `opening_balance_at`,
+      _(statement row-continuity gate; deferred with the statement parser — D19. The history path
+      has no per-row balance, and the atomic transaction already makes a failed import insert
+      nothing.)_
+- [x] Migrations for `accounts.opening_balance_cents` / `opening_balance_at`,
       `transactions.is_adjustment`, and the seeded `Unaccounted` category
-- [ ] First import derives the opening balance and presents it for confirmation; it is editable
+- [x] First import derives the opening balance and presents it for confirmation; it is editable
       afterwards and is never set silently
-- [ ] Balance verification: opening balance plus everything captured on or after
+- [x] Balance verification: opening balance plus everything captured on or after
       `opening_balance_at` equals the balance on the newest print. A running figure, never a gate.
       Suppressed when `anchor_reliable` is false.
-- [ ] Prints in one session that disagree on the balance are flagged, newest wins
-- [ ] Event grouping persisted, including regrouping rows from earlier batches when a later
+- [x] Prints in one session that disagree on the balance are flagged, newest wins
+- [x] Event grouping persisted, including regrouping rows from earlier batches when a later
       import supplies the missing half of a pair
-- [ ] Import report shows rows parsed, events after collapse, inserted / duplicate counts, and
+- [x] Import report shows rows parsed, events after collapse, inserted / duplicate counts, and
       whether the balance verifies
-- [ ] Rollback deletes a batch's drafts and unwinds any cross-batch regrouping it caused, and
+- [x] Rollback deletes a batch's drafts and unwinds any cross-batch regrouping it caused, and
       refuses if any row is confirmed
-- [ ] **Re-importing the same file twice inserts zero rows.** This is the sprint's key test.
-- [ ] Overlapping periods insert only the genuinely new rows
+- [x] **Re-importing the same file twice inserts zero rows.** This is the sprint's key test.
+- [x] Overlapping periods insert only the genuinely new rows
 
 ---
 

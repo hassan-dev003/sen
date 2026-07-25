@@ -74,16 +74,18 @@ pnpm dev
 
 ## Status
 
-Sprint 2 (History parser) complete. The M2U capture path is a pure library, tested exhaustively
-against synthetic fixtures: `extract` turns PDF bytes into lines (rejecting a rasterised print by
-name), `parse` segments the three-line blocks and reads the balance anchor, the shared normaliser
-converges merchants across sources, and event collapse folds auth/reversal/settlement rows into one
-economic event — order-independent and orphan-tolerant. Sprint 1's data model, RLS with a
-second-user isolation test, `lib/money/`, and the seed are in place; deployed on Vercel with auth
-working end to end.
+Sprint 3 (Import pipeline) complete. The parser is wired to the database: a capture PDF uploads to a
+private per-user Storage bucket, is parsed and planned in memory, then written in one atomic
+transaction (an RLS-respecting plpgsql function) — `raw_rows` verbatim, transactions deduped by a
+`(user_id, dedupe_hash)` unique index with `on conflict do nothing`, and cross-batch event
+regrouping applied and recorded so rollback can unwind it. Re-importing the same capture inserts
+zero rows; overlapping windows insert only what's new. The first import derives an opening balance
+for confirmation (D21), and each import shows a running balance-verification figure. Adjustments and
+the `Unaccounted` category exist in the schema; posting them is Sprint 4.
 
-Still no UI beyond the authenticated shell, and nothing is wired to the database yet — the import
-pipeline (Sprint 3), review queue, ledger, budgets, and settings arrive in later sprints.
+Earlier sprints stand: the pure history parser + event collapse (Sprint 2), the data model with a
+second-user RLS isolation test and `lib/money/` (Sprint 1), and the deployed authenticated shell
+(Sprint 0). The review queue, ledger, budgets, and settings arrive in later sprints.
 
 The specs in `docs/` are the source of truth; if the code and the docs disagree, that is a bug in
 one of them and should be raised, not silently resolved.

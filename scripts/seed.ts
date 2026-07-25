@@ -28,6 +28,9 @@ const CATEGORIES: Array<{ name: string; kind: CategoryKind; sort: number }> = [
   { name: "Health", kind: "expense", sort: 50 },
   { name: "Income", kind: "income", sort: 60 },
   { name: "Transfer", kind: "transfer", sort: 70 },
+  // Where reconciliation adjustments land (D21). Not part of the taxonomy
+  // question; must not be archived.
+  { name: "Unaccounted", kind: "expense", sort: 900 },
 ];
 
 function requireEnv(name: string): string {

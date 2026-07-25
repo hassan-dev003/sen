@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rls": "vitest run --config vitest.integration.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "supabase": "supabase",
     "db:migrate": "supabase db push",
     "db:migrate:local": "supabase migration up --local",
