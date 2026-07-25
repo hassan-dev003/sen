@@ -14,19 +14,18 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
       <div>
-        <h1 className="text-2xl font-semibold">Sen</h1>
-        <p className="mt-1 text-sm opacity-70">
-          Machines type, humans confirm.
-        </p>
+        <p className="eyebrow">Sen</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+        <p className="mt-1 text-sm text-muted">Machines type, humans confirm.</p>
       </div>
 
       {state.status === "sent" ? (
-        <p className="rounded-md border border-green-600/40 bg-green-600/10 px-4 py-3 text-sm">
+        <p className="rounded-lg border border-credit/40 bg-credit-soft px-4 py-3 text-sm">
           {state.message}
         </p>
       ) : (
         <form action={formAction} className="flex flex-col gap-3">
-          <label htmlFor="email" className="text-sm font-medium">
+          <label htmlFor="email" className="text-xs text-muted">
             Email
           </label>
           <input
@@ -35,17 +34,17 @@ export default function LoginPage() {
             type="email"
             autoComplete="email"
             required
-            className="rounded-md border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50"
+            className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
           />
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
           >
             {pending ? "Sending…" : "Send magic link"}
           </button>
           {state.status === "error" && (
-            <p className="text-sm text-red-600">{state.message}</p>
+            <p className="text-sm text-danger">{state.message}</p>
           )}
         </form>
       )}

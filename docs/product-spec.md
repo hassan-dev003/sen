@@ -135,7 +135,7 @@ These need the owner's answer before the sprint that depends on them.
 | --- | --- | --- |
 | What is the starting category taxonomy? | S1 seed | Open |
 | Should MAE QR person-to-person transfers be spending, transfers, or their own category? They are high-volume and run in both directions. | S5 | Open |
-| Should confirmed transactions be editable after the fact, or locked? | S4 | Open |
+| Should confirmed transactions be editable after the fact, or locked? | S4 | **Answered — editable, with an audit trail** (D22). Only the owner edits; rules never do (D7). The edit surface lands with the ledger in S6. |
 | Are Maybank e-statement PDFs password protected? | S2 | **Answered — no.** Three statements extracted cleanly as text. |
 | Does the description column wrap onto a second line? | S2 | **Answered — no.** Blocks are 1–4 discrete lines; the merchant is truncated at 20 characters rather than wrapped. |
 | How is spending captured? | S4 | **Answered — M2U history print-to-PDF** (D17) for bank transactions, manual entry for cash. Statement import deferred (D19). |

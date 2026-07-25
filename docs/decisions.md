@@ -235,6 +235,30 @@ D3.
 
 ---
 
+### D22 — Confirmed transactions stay editable by the owner, with an audit trail
+**Decided.** Resolves the `product-spec.md` open question that blocked Sprint 4. A
+confirmed transaction is not locked: the owner can correct its category, amount, or note
+after the fact. This is consistent with manual entry, which lands already-confirmed and is
+edited through the same form (product-spec.md#manual-entry), and with a single-owner app
+where the owner is the sole authority.
+
+Two guards keep "editable" from meaning "untrustworthy":
+
+- **Only the owner edits, never a rule.** This does not reopen D7 — a rule created later still
+  never retroactively rewrites a confirmed row. Automatic recategorisation of confirmed history
+  remains an explicit, previewed action, and nothing here changes that.
+- **Every edit to a confirmed row is recorded.** Edits are written to a `transaction_revisions`
+  audit table (what changed, from and to, when), so a correction is visible rather than silent.
+  This is the owner's own data under RLS, not a log, so it does not conflict with AGENTS.md #9.
+
+Editing a *draft* in the review queue is ordinary review, not a correction, and records no
+revision — a draft is a proposal, not yet ledger truth. The revision trail and the edit surface
+it hangs off (the ledger's row editor) are built in Sprint 6, where editing a confirmed
+transaction first has a home; Sprint 4 establishes the decision and the review-queue behaviour
+that depends on it (manual entries are editable, confirmation is not a one-way door).
+
+---
+
 ## Adding an entry
 
 Any new dependency, any deviation from these specs, and any resolution of an open question in

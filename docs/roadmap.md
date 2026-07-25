@@ -106,19 +106,23 @@ M2U history import carries bank transactions (D17); manual entry covers cash and
 bank cannot see. The entry form is still a first-class screen, but it no longer has to absorb ninety
 events a month.
 
-- [ ] Draft list of **events**, not rows: date, description, amount, proposed category, source
+- [x] Draft list of **events**, not rows: date, description, amount, proposed category, source
       batch, with constituent rows visible on expand
-- [ ] Pending and orphan events are visibly distinct from resolved ones, and are not errors
-- [ ] Keyboard-first: confirm, change category, skip, undo — all single keys, with a help overlay
-- [ ] Inline category picker with type-ahead
-- [ ] Bulk confirm for a filtered selection
-- [ ] Manual entry form (covers cash) — date, amount, category, note, in under ten seconds
-- [ ] Ignore action for rows that should never appear in the ledger
-- [ ] Usable on a phone
+- [x] Pending and orphan events are visibly distinct from resolved ones, and are not errors
+- [x] Keyboard-first: confirm, change category, skip, undo — all single keys, with a help overlay
+- [x] Inline category picker with type-ahead
+- [x] Bulk confirm for a filtered selection
+- [x] Manual entry form (covers cash) — date, amount, category, note, in under ten seconds
+- [x] Ignore action for rows that should never appear in the ledger
+- [x] Usable on a phone
 - [ ] Playwright test: clear an 80-event queue using only the keyboard
-- [ ] Balance status is visible without hunting for it: verified, or off by RM X with a prompt to
+      _(The queue's decision logic is a pure reducer, `lib/review/queue-reducer.ts`, with a test
+      that clears an 80-event queue in 80 keystroke-actions and asserts 80 confirm effects. The
+      browser-level e2e still needs an auth-bypass + seed harness against a live Supabase stack;
+      pending.)_
+- [x] Balance status is visible without hunting for it: verified, or off by RM X with a prompt to
       widen the window and re-import
-- [ ] Posting an adjustment for a difference that survives a wider re-import — Sen offers the
+- [x] Posting an adjustment for a difference that survives a wider re-import — Sen offers the
       amount, the owner confirms, and it lands in `Unaccounted` like any other transaction
 
 ---
