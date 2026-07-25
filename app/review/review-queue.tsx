@@ -1,10 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { formatMYR, signedCents } from "@/lib/money";
 import { formatDayMonth } from "@/lib/ui/format";
 import type { QueueEvent } from "@/lib/events/queue";
 import type { EventState } from "@/lib/events/types";
+import {
+  initQueue,
+  queueReducer,
+  type QueueEffect,
+} from "@/lib/review/queue-reducer";
 import {
   confirmEventsAction,
   ignoreEventsAction,
@@ -18,17 +23,21 @@ export interface CategoryOption {
   kind: "expense" | "income" | "transfer";
 }
 
-type UndoEntry = {
-  kind: "confirm" | "ignore";
-  events: QueueEvent[];
-};
-
-function sortEvents(events: QueueEvent[]): QueueEvent[] {
-  return [...events].sort((a, b) =>
-    a.bookedAt !== b.bookedAt
-      ? b.bookedAt.localeCompare(a.bookedAt)
-      : a.eventGroupId.localeCompare(b.eventGroupId),
-  );
+function runEffect(effect: QueueEffect): void {
+  switch (effect.kind) {
+    case "confirm":
+      void confirmEventsAction(effect.eventGroupIds);
+      break;
+    case "ignore":
+      void ignoreEventsAction(effect.eventGroupIds);
+      break;
+    case "revert":
+      void revertEventsAction(effect.eventGroupIds);
+      break;
+    case "setCategory":
+      void setCategoryAction(effect.eventGroupId, effect.categoryId);
+      break;
+  }
 }
 
 export function ReviewQueue({
@@ -38,117 +47,28 @@ export function ReviewQueue({
   initialEvents: QueueEvent[];
   categories: CategoryOption[];
 }) {
-  const [events, setEvents] = useState<QueueEvent[]>(() => sortEvents(initialEvents));
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [state, dispatch] = useReducer(queueReducer, initialEvents, initQueue);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
   const [, startTransition] = useTransition();
+
+  const { events, activeIndex, selected, expanded, undoStack } = state;
 
   const categoryById = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
     [categories],
   );
 
-  const clampIndex = useCallback((i: number, len: number) => {
-    if (len === 0) return 0;
-    return Math.max(0, Math.min(i, len - 1));
-  }, []);
-
-  const removeEvents = useCallback(
-    (groupIds: string[], kind: "confirm" | "ignore") => {
-      const ids = new Set(groupIds);
-      setEvents((prev) => {
-        const removed = prev.filter((e) => ids.has(e.eventGroupId));
-        if (removed.length > 0) {
-          setUndoStack((s) => [...s, { kind, events: removed }]);
-        }
-        const next = prev.filter((e) => !ids.has(e.eventGroupId));
-        setActiveIndex((i) => clampIndex(i, next.length));
-        return next;
-      });
-      setSelected(new Set());
-    },
-    [clampIndex],
-  );
-
-  const targetsFor = useCallback(
-    (index: number): string[] => {
-      if (selected.size > 0) return [...selected];
-      const active = events[index];
-      return active ? [active.eventGroupId] : [];
-    },
-    [events, selected],
-  );
-
-  const confirm = useCallback(
-    (index: number) => {
-      const ids = targetsFor(index);
-      if (ids.length === 0) return;
-      removeEvents(ids, "confirm");
-      startTransition(() => {
-        void confirmEventsAction(ids);
-      });
-    },
-    [removeEvents, targetsFor],
-  );
-
-  const ignore = useCallback(
-    (index: number) => {
-      const ids = targetsFor(index);
-      if (ids.length === 0) return;
-      removeEvents(ids, "ignore");
-      startTransition(() => {
-        void ignoreEventsAction(ids);
-      });
-    },
-    [removeEvents, targetsFor],
-  );
-
-  const undo = useCallback(() => {
-    setUndoStack((stack) => {
-      if (stack.length === 0) return stack;
-      const last = stack[stack.length - 1]!;
-      setEvents((prev) => sortEvents([...prev, ...last.events]));
-      startTransition(() => {
-        void revertEventsAction(last.events.map((e) => e.eventGroupId));
-      });
-      return stack.slice(0, -1);
+  // Flush the writes the reducer recorded, then clear them. The reducer stays
+  // pure; this is the only place the queue touches the database.
+  useEffect(() => {
+    if (state.effects.length === 0) return;
+    const effects = state.effects;
+    startTransition(() => {
+      for (const effect of effects) runEffect(effect);
     });
-  }, []);
-
-  const assignCategory = useCallback(
-    (groupId: string, categoryId: string) => {
-      setEvents((prev) =>
-        prev.map((e) => (e.eventGroupId === groupId ? { ...e, categoryId } : e)),
-      );
-      setPickerFor(null);
-      startTransition(() => {
-        void setCategoryAction(groupId, categoryId);
-      });
-    },
-    [],
-  );
-
-  const toggleSelect = useCallback((groupId: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
-  }, []);
-
-  const toggleExpand = useCallback((groupId: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
-  }, []);
+    dispatch({ type: "flushEffects" });
+  }, [state.effects]);
 
   // Global keyboard model. Suspended while a picker or help overlay owns input.
   useEffect(() => {
@@ -163,16 +83,16 @@ export function ReviewQueue({
         case "j":
         case "ArrowDown":
           e.preventDefault();
-          setActiveIndex((i) => clampIndex(i + 1, events.length));
+          dispatch({ type: "move", delta: 1 });
           break;
         case "k":
         case "ArrowUp":
           e.preventDefault();
-          setActiveIndex((i) => clampIndex(i - 1, events.length));
+          dispatch({ type: "move", delta: -1 });
           break;
         case "c":
           e.preventDefault();
-          confirm(activeIndex);
+          dispatch({ type: "confirm" });
           break;
         case "e":
         case "Enter": {
@@ -183,55 +103,37 @@ export function ReviewQueue({
         }
         case "i":
           e.preventDefault();
-          ignore(activeIndex);
+          dispatch({ type: "ignore" });
           break;
         case "x":
-        case " ": {
+        case " ":
           e.preventDefault();
-          const active = events[activeIndex];
-          if (active) {
-            toggleSelect(active.eventGroupId);
-            setActiveIndex((idx) => clampIndex(idx + 1, events.length));
-          }
+          dispatch({ type: "toggleSelect" });
           break;
-        }
-        case "o": {
+        case "o":
           e.preventDefault();
-          const active = events[activeIndex];
-          if (active) toggleExpand(active.eventGroupId);
+          dispatch({ type: "toggleExpand" });
           break;
-        }
         case "u":
           e.preventDefault();
-          undo();
+          dispatch({ type: "undo" });
           break;
         case "?":
           e.preventDefault();
           setHelpOpen(true);
           break;
         case "Escape":
-          if (selected.size > 0) {
+          if (selected.length > 0) {
             e.preventDefault();
-            setSelected(new Set());
+            // Clearing selection: toggle each off. Simpler to re-init selection.
+            for (const id of selected) dispatch({ type: "toggleSelect", eventGroupId: id });
           }
           break;
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [
-    activeIndex,
-    events,
-    pickerFor,
-    helpOpen,
-    selected.size,
-    clampIndex,
-    confirm,
-    ignore,
-    undo,
-    toggleSelect,
-    toggleExpand,
-  ]);
+  }, [activeIndex, events, pickerFor, helpOpen, selected]);
 
   const activeEventForPicker = events.find((e) => e.eventGroupId === pickerFor) ?? null;
 
@@ -239,7 +141,7 @@ export function ReviewQueue({
     return (
       <EmptyQueue
         canUndo={undoStack.length > 0}
-        onUndo={undo}
+        onUndo={() => dispatch({ type: "undo" })}
       />
     );
   }
@@ -250,10 +152,10 @@ export function ReviewQueue({
         <p className="text-muted">
           <span className="tnum font-medium text-ink">{events.length}</span>{" "}
           {events.length === 1 ? "event" : "events"} to review
-          {selected.size > 0 && (
+          {selected.length > 0 && (
             <>
               {" · "}
-              <span className="tnum font-medium text-accent">{selected.size}</span>{" "}
+              <span className="tnum font-medium text-accent">{selected.length}</span>{" "}
               selected
             </>
           )}
@@ -273,37 +175,49 @@ export function ReviewQueue({
             key={event.eventGroupId}
             event={event}
             active={index === activeIndex}
-            selected={selected.has(event.eventGroupId)}
-            expanded={expanded.has(event.eventGroupId)}
+            selected={selected.includes(event.eventGroupId)}
+            expanded={expanded.includes(event.eventGroupId)}
             categoryName={
               event.categoryId ? categoryById.get(event.categoryId)?.name ?? null : null
             }
-            onActivate={() => setActiveIndex(index)}
-            onConfirm={() => confirm(index)}
-            onIgnore={() => ignore(index)}
+            onActivate={() => dispatch({ type: "setActive", index })}
+            onConfirm={() => {
+              dispatch({ type: "setActive", index });
+              dispatch({ type: "confirm" });
+            }}
+            onIgnore={() => {
+              dispatch({ type: "setActive", index });
+              dispatch({ type: "ignore" });
+            }}
             onEditCategory={() => setPickerFor(event.eventGroupId)}
-            onToggleSelect={() => toggleSelect(event.eventGroupId)}
-            onToggleExpand={() => toggleExpand(event.eventGroupId)}
+            onToggleSelect={() =>
+              dispatch({ type: "toggleSelect", eventGroupId: event.eventGroupId })
+            }
+            onToggleExpand={() =>
+              dispatch({ type: "toggleExpand", eventGroupId: event.eventGroupId })
+            }
           />
         ))}
       </ol>
 
       {/* Bulk action bar — also the primary confirm affordance on a phone. */}
-      {selected.size > 0 && (
+      {selected.length > 0 && (
         <div className="sticky bottom-4 z-10 mx-auto flex items-center gap-3 rounded-full border border-border-strong bg-surface px-4 py-2 shadow-lg">
           <span className="text-sm text-muted">
-            <span className="tnum font-medium text-ink">{selected.size}</span> selected
+            <span className="tnum font-medium text-ink">{selected.length}</span> selected
           </span>
           <button
             type="button"
-            onClick={() => confirm(activeIndex)}
+            onClick={() => dispatch({ type: "confirm" })}
             className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-contrast hover:bg-accent-hover"
           >
             Confirm selected
           </button>
           <button
             type="button"
-            onClick={() => setSelected(new Set())}
+            onClick={() => {
+              for (const id of selected) dispatch({ type: "toggleSelect", eventGroupId: id });
+            }}
             className="text-sm text-muted hover:text-ink"
           >
             Clear
@@ -311,11 +225,11 @@ export function ReviewQueue({
         </div>
       )}
 
-      {undoStack.length > 0 && selected.size === 0 && (
+      {undoStack.length > 0 && selected.length === 0 && (
         <div className="text-center">
           <button
             type="button"
-            onClick={undo}
+            onClick={() => dispatch({ type: "undo" })}
             className="text-xs text-muted underline underline-offset-2 hover:text-ink"
           >
             Undo last {undoStack[undoStack.length - 1]!.kind}
@@ -327,7 +241,14 @@ export function ReviewQueue({
         <CategoryPicker
           event={activeEventForPicker}
           categories={categories}
-          onPick={(categoryId) => assignCategory(activeEventForPicker.eventGroupId, categoryId)}
+          onPick={(categoryId) => {
+            dispatch({
+              type: "assignCategory",
+              eventGroupId: activeEventForPicker.eventGroupId,
+              categoryId,
+            });
+            setPickerFor(null);
+          }}
           onClose={() => setPickerFor(null)}
         />
       )}
@@ -358,18 +279,9 @@ function EmptyQueue({ canUndo, onUndo }: { canUndo: boolean; onUndo: () => void 
 }
 
 const STATE_CHIP: Partial<Record<EventState, { label: string; className: string }>> = {
-  pending: {
-    label: "Pending",
-    className: "bg-warning-soft text-warning",
-  },
-  orphan: {
-    label: "Orphan",
-    className: "bg-warning-soft text-warning",
-  },
-  cancelled: {
-    label: "Cancelled",
-    className: "bg-surface-2 text-muted",
-  },
+  pending: { label: "Pending", className: "bg-warning-soft text-warning" },
+  orphan: { label: "Orphan", className: "bg-warning-soft text-warning" },
+  cancelled: { label: "Cancelled", className: "bg-surface-2 text-muted" },
 };
 
 function EventCard({
@@ -501,7 +413,7 @@ function EventCard({
           {formatMYR(signed)}
         </div>
 
-        {/* Row actions — always visible on touch, on hover elsewhere. */}
+        {/* Row actions — visible on touch, and on hover elsewhere. */}
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
